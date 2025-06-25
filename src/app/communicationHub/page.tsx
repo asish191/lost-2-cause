@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { FaHome, FaBoxOpen, FaComments, FaListAlt, FaSignOutAlt, FaBars } from "react-icons/fa";
-import CommunicationHubForm from "@/components/CommunicatinHubForm";
+import CommunicationHubForm from "@/components/forms/CommunicatinHubForm";
 
 export default function CommunicationHubPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);

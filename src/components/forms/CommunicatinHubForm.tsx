@@ -122,7 +122,7 @@ export default function CommunicationHubForm({ item }: CommunicationHubProps) {
   const simulateAdminResponse = (userMessageId: string) => {
     setIsAdminTyping(true);
     
-    // Mark user's message as read
+
     setTimeout(() => {
         setMessages(prev => prev.map(msg => msg.id === userMessageId ? {...msg, status: 'read'} : msg));
     }, 1000);
