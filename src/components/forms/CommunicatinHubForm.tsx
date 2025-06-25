@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { FaSearch, FaPaperclip, FaCheckDouble, FaSmile, FaUser, FaCog, FaBell } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
+import { availableReactions, quickReplies, userColors } from '@/constants/communication';
+import { handleReaction as handleReactionUtil, simulateAdminResponse as simulateAdminResponseUtil } from '@/utils/communication';
 
 interface Attachment {
   type: 'image';
@@ -30,27 +32,173 @@ interface CommunicationHubProps {
   item?: string | null;
 }
 
-const availableReactions = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+// MessageList subcomponent
+function MessageList({ messages, handleReaction, activePicker, setActivePicker, availableReactions }: {
+  messages: Message[];
+  handleReaction: (messageId: string, emoji: string) => void;
+  activePicker: string | null;
+  setActivePicker: (id: string | null) => void;
+  availableReactions: string[];
+}) {
+  return (
+    <div className="flex-1 overflow-y-auto px-2 py-4" style={{ maxHeight: '60vh' }}>
+      {messages.map((msg) => (
+        <div key={msg.id} className={`mb-4 flex ${msg.senderRole === 'user' ? 'justify-end' : 'justify-start'}`}> 
+          <div className={`rounded-lg px-4 py-2 shadow-md max-w-xs ${msg.senderRole === 'admin' ? 'bg-indigo-100 text-gray-800' : msg.senderRole === 'system' ? 'bg-gray-200 text-gray-600' : 'bg-blue-600 text-white'}`}> 
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-semibold text-sm">{msg.sender}</span>
+              <span className="text-xs text-gray-400">{msg.timestamp}</span>
+            </div>
+            <div className="whitespace-pre-line break-words">{msg.content}</div>
+            {msg.attachment && msg.attachment.type === 'image' && (
+              <img src={msg.attachment.url} alt="attachment" className="mt-2 rounded-lg max-h-40" />
+            )}
+            {/* Reactions */}
+            {msg.reactions && (
+              <div className="flex gap-1 mt-2">
+                {msg.reactions.map((reaction) => (
+                  <button
+                    key={reaction.emoji}
+                    className="text-lg px-1 rounded hover:bg-gray-200"
+                    onClick={() => handleReaction(msg.id, reaction.emoji)}
+                  >
+                    {reaction.emoji} <span className="text-xs">{reaction.count}</span>
+                  </button>
+                ))}
+                <button
+                  className="text-lg px-1 rounded hover:bg-gray-200"
+                  onClick={() => setActivePicker(msg.id)}
+                >
+                  +
+                </button>
+                {activePicker === msg.id && (
+                  <div className="absolute bg-white border rounded shadow p-2 flex gap-1 z-10">
+                    {availableReactions.map((emoji) => (
+                      <button key={emoji} onClick={() => handleReaction(msg.id, emoji)} className="text-xl hover:bg-gray-100 rounded p-1">{emoji}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// MessageInput subcomponent
+function MessageInput({
+  newMessage,
+  setNewMessage,
+  handleSendMessage,
+  fileInputRef,
+  handleFileChange,
+  handleKeyPress,
+  quickReplies,
+  showQuickReplies
+}: {
+  newMessage: string;
+  setNewMessage: (msg: string) => void;
+  handleSendMessage: (content?: string) => void;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  handleKeyPress: (e: React.KeyboardEvent) => void;
+  quickReplies: { label: string; icon: string; color: string }[];
+  showQuickReplies: boolean;
+}) {
+  return (
+    <div className="p-4 bg-white border-t border-gray-200">
+      {showQuickReplies && (
+        <div className="flex gap-3 mb-3 justify-center">
+          {quickReplies.map((reply) => (
+            <button
+              key={reply.label}
+              onClick={() => handleSendMessage(reply.label)}
+              className={`flex items-center gap-2 px-4 py-2 font-medium rounded-full transition-colors text-sm ${reply.color}`}
+            >
+              <span className="text-lg">{reply.icon}</span>
+              {reply.label}
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="flex items-center space-x-3">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          className="hidden"
+          accept="image/*"
+        />
+        <input
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Type a message..."
+          className="flex-1 w-full px-4 py-3 border-gray-300 border rounded-full focus:outline-none focus:ring-2 focus:ring-[#39cccc] focus:border-[#39cccc]"
+        />
+        <button 
+          onClick={() => fileInputRef.current?.click()}
+          className="p-3 text-gray-500 hover:text-[#556B2F] transition-colors"
+          aria-label="Attach file"
+        >
+          <FaPaperclip size={20} />
+        </button>
+        <button
+          onClick={() => handleSendMessage()}
+          disabled={!newMessage.trim()}
+          className="px-6 py-3 bg-gradient-to-r from-[#002b55] to-[#39cccc] text-white font-semibold rounded-full hover:from-[#003b73] hover:to-[#2aa1a1] focus:outline-none focus:ring-2 focus:ring-[#95e6e6] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// NotificationPopup subcomponent
+function NotificationPopup({ show }: { show: boolean }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          className="absolute top-4 right-4 z-50 bg-[#556B2F] text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2"
+        >
+          <FaBell className="w-4 h-4" />
+          <span className="text-sm font-medium">New message received!</span>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
 
 export default function CommunicationHubForm({ item }: CommunicationHubProps) {
+  // State for chat messages
   const [messages, setMessages] = useState<Message[]>([]);
+  // State for admin typing indicator
   const [isAdminTyping, setIsAdminTyping] = useState(false);
+  // Ref for file input
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // State for which message's reaction picker is open
   const [activePicker, setActivePicker] = useState<string | null>(null);
+  // Assign a random user color from constants
   const [userColor, setUserColor] = useState<string>('bg-blue-700');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // State for notification count
   const [notifications, setNotifications] = useState<number>(0);
+  // State for showing notification popup
   const [showNotifications, setShowNotifications] = useState(false);
+  // State for sound enabled/disabled
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const audioRef = useRef<HTMLAudioElement>(null);
-  
-  useEffect(() => {
-    const colors = [
-        'bg-[#556B2F]', 'bg-[#808000]', 'bg-[#39cccc]',
-        'bg-[#6B8E23]', 'bg-[#2E8B57]', 'bg-[#20B2AA]',
-    ];
-    setUserColor(colors[Math.floor(Math.random() * colors.length)]);
+  // Ref for audio element
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  // Set user color and initial messages on mount or when item changes
+  useEffect(() => {
+    setUserColor(userColors[Math.floor(Math.random() * userColors.length)]);
     const initialMessages: Message[] = item
       ? [
           {
@@ -80,84 +228,39 @@ export default function CommunicationHubForm({ item }: CommunicationHubProps) {
     setMessages(initialMessages);
   }, [item]);
 
+  // State for new message input
   const [newMessage, setNewMessage] = useState('');
+  // State for search query
   const [searchQuery, setSearchQuery] = useState('');
+  // Ref for scrolling to the end of messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const quickReplies = [
-    { label: 'Question about an item', icon: '❓', color: 'bg-[#e0f7fa] text-[#002b55] hover:bg-[#cceef5] border border-[#95e6e6]' },
-    { label: 'How to claim an item?', icon: '🎁', color: 'bg-[#f0f4e4] text-[#4b5320] hover:bg-[#e6eace] border border-[#BDB76B]' },
-    { label: 'Report a technical issue', icon: '⚙️', color: 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-300' },
-  ];
-
+  // Handle adding/removing reactions to a message
   const handleReaction = (messageId: string, emoji: string) => {
-    setMessages(prev =>
-        prev.map(msg => {
-            if (msg.id === messageId) {
-                const reactions = msg.reactions ? [...msg.reactions] : [];
-                const existingReaction = reactions.find(r => r.emoji === emoji);
-                const currentUser = 'You';
-
-                if (existingReaction) {
-                    if (existingReaction.users.includes(currentUser)) {
-                        existingReaction.count -= 1;
-                        existingReaction.users = existingReaction.users.filter(u => u !== currentUser);
-                    } else {
-                        existingReaction.count += 1;
-                        existingReaction.users.push(currentUser);
-                    }
-                    const updatedReactions = reactions.filter(r => r.count > 0);
-                    return { ...msg, reactions: updatedReactions.length > 0 ? updatedReactions : undefined };
-                } else {
-                    reactions.push({ emoji, count: 1, users: [currentUser] });
-                    return { ...msg, reactions };
-                }
-            }
-            return msg;
-        })
-    );
+    setMessages(prev => handleReactionUtil(prev, messageId, emoji, 'You'));
     setActivePicker(null);
   };
 
+  // Simulate admin response after user sends a message
   const simulateAdminResponse = (userMessageId: string) => {
-    setIsAdminTyping(true);
-    
-
-    setTimeout(() => {
-        setMessages(prev => prev.map(msg => msg.id === userMessageId ? {...msg, status: 'read'} : msg));
-    }, 1000);
-
-    // Simulate typing and send a reply
-    setTimeout(() => {
-        setIsAdminTyping(false);
-        const reply: Message = {
-            id: `admin-${Date.now()}`,
-            sender: 'Admin',
-            content: "Thanks for reaching out! I'm looking into this for you and will get back to you shortly.",
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            senderRole: 'admin',
-        };
-        setMessages(prev => [...prev, reply]);
-        
-        // Add notification for new admin message
-        setNotifications(prev => prev + 1);
-        
-        // Show notification popup
-        setShowNotifications(true);
-        setTimeout(() => setShowNotifications(false), 3000);
-        
-        // Play notification sound
-        if (audioRef.current && soundEnabled) {
-          audioRef.current.play().catch(e => console.log('Audio play failed:', e));
-        }
-    }, 3000);
+    simulateAdminResponseUtil({
+      setIsAdminTyping,
+      setMessages,
+      setNotifications,
+      setShowNotifications,
+      audioRef,
+      soundEnabled,
+      userMessageId
+    });
   };
 
+  // Clear notification count and hide popup
   const clearNotifications = () => {
     setNotifications(0);
     setShowNotifications(false);
   };
 
+  // Handle sending a new message or image attachment
   const handleSendMessage = (content?: string, attachment?: Attachment) => {
     const messageContent = content || newMessage;
     if (messageContent.trim() || attachment) {
@@ -172,36 +275,38 @@ export default function CommunicationHubForm({ item }: CommunicationHubProps) {
         status: 'sent'
       };
       setMessages(prev => [...prev, message]);
-
       if (!content) {
         setNewMessage('');
       }
-
       simulateAdminResponse(messageId);
     }
   };
 
+  // Handle file input change for image attachments
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-        const imageUrl = URL.createObjectURL(file);
-        handleSendMessage(`Image: ${file.name}`, { type: 'image', url: imageUrl });
+      const imageUrl = URL.createObjectURL(file);
+      handleSendMessage(`Image: ${file.name}`, { type: 'image', url: imageUrl });
     }
     // Reset file input
-    if(e.target) e.target.value = '';
+    if (e.target) e.target.value = '';
   };
 
+  // Handle Enter key press to send message
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
-  
+
+  // Auto-scroll to the latest message when messages or typing state changes
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isAdminTyping]);
 
+  // Filter messages based on search query
   const filteredMessages = messages.filter(message =>
     message.content.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -360,19 +465,7 @@ export default function CommunicationHubForm({ item }: CommunicationHubProps) {
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-6 space-y-2 bg-[#f0f4e4] relative" onClick={() => setActivePicker(null)}>
           {/* Notification Popup */}
-          <AnimatePresence>
-            {showNotifications && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="absolute top-4 right-4 z-50 bg-[#556B2F] text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2"
-              >
-                <FaBell className="w-4 h-4" />
-                <span className="text-sm font-medium">New message received!</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
+          <NotificationPopup show={showNotifications} />
           
           <AnimatePresence>
             {filteredMessages.map((message) => (
@@ -478,52 +571,16 @@ export default function CommunicationHubForm({ item }: CommunicationHubProps) {
         </div>
 
         {/* Quick Replies & Message Input */}
-        <div className="p-4 bg-white border-t border-gray-200">
-          {messages.filter(m => m.senderRole === 'user').length === 0 && (
-            <div className="flex gap-3 mb-3 justify-center">
-              {quickReplies.map((reply) => (
-                <button
-                  key={reply.label}
-                  onClick={() => handleSendMessage(reply.label)}
-                  className={`flex items-center gap-2 px-4 py-2 font-medium rounded-full transition-colors text-sm ${reply.color}`}
-                >
-                  <span className="text-lg">{reply.icon}</span>
-                  {reply.label}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="flex items-center space-x-3">
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-              className="hidden"
-              accept="image/*"
-            />
-            <input
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type a message..."
-              className="flex-1 w-full px-4 py-3 border-gray-300 border rounded-full focus:outline-none focus:ring-2 focus:ring-[#39cccc] focus:border-[#39cccc]"
-            />
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              className="p-3 text-gray-500 hover:text-[#556B2F] transition-colors"
-              aria-label="Attach file"
-            >
-              <FaPaperclip size={20} />
-            </button>
-            <button
-              onClick={() => handleSendMessage()}
-              disabled={!newMessage.trim()}
-              className="px-6 py-3 bg-gradient-to-r from-[#002b55] to-[#39cccc] text-white font-semibold rounded-full hover:from-[#003b73] hover:to-[#2aa1a1] focus:outline-none focus:ring-2 focus:ring-[#95e6e6] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
-            >
-              Send
-            </button>
-          </div>
-        </div>
+        <MessageInput
+          newMessage={newMessage}
+          setNewMessage={setNewMessage}
+          handleSendMessage={handleSendMessage}
+          fileInputRef={fileInputRef}
+          handleFileChange={handleFileChange}
+          handleKeyPress={handleKeyPress}
+          quickReplies={quickReplies}
+          showQuickReplies={messages.filter(m => m.senderRole === 'user').length === 0}
+        />
       </div>
       
       {/* Audio element for notifications */}
