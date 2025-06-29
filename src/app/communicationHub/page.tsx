@@ -1,15 +1,15 @@
 "use client";
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Sidebar from "@/components/common/Sidebar";
-import CommunicationHubForm from "@/components/forms/CommunicatinHubForm";
+import Sidebar from "@/features/layout/components/Sidebar";
+import CommunicationHubForm from "@/features/chat/components/CommunicationHubForm";
 
 export default function CommunicationHubPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeMenu, setActiveMenu] = useState('comm');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const item = searchParams.get('item');
+  const item = searchParams?.get('item');
 
   const handleLogout = () => {
     router.push("/");

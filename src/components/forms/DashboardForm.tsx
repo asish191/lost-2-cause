@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FaHome, FaBoxOpen, FaComments, FaListAlt, FaSignOutAlt, FaBars } from "react-icons/fa";
-import Sidebar from "@/components/common/Sidebar";
+import Sidebar from "@/features/layout/components/Sidebar";
 import { dashboardItems } from '@/constants/items';
 
 // ItemCard subcomponent
