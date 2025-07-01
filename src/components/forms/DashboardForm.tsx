@@ -1,10 +1,11 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FaHome, FaBoxOpen, FaComments, FaListAlt, FaSignOutAlt, FaBars } from "react-icons/fa";
 import Sidebar from "@/components/common/Sidebar";
 import { dashboardItems } from '@/constants/items';
+import { useSidebar } from "@/components/common/SidebarContext";
 
 // ItemCard subcomponent
 function ItemCard({
@@ -42,8 +43,7 @@ function ItemCard({
 }
 
 export default function DashboardForm() {
-  // State for sidebar open/close
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { sidebarOpen, setSidebarOpen } = useSidebar();
   // State for active menu in sidebar
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const router = useRouter();
@@ -73,7 +73,7 @@ export default function DashboardForm() {
           </button>
         </div>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">Welcome to Your Dashboard</h1>
+          <h1 className="text-3xl font-bold mb-4">Welcome to Dashboard</h1>
         </div>
         <div className="grid grid-cols-1 gap-6">
           {/* Items List Section */}

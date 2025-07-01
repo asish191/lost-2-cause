@@ -3,9 +3,10 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "@/components/common/Sidebar";
 import CommunicationHubForm from "@/components/forms/CommunicatinHubForm";
+import { useSidebar } from "@/components/common/SidebarContext";
 
 export default function CommunicationHubPage() {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const { sidebarOpen, setSidebarOpen } = useSidebar();
   const [activeMenu, setActiveMenu] = useState('comm');
   const router = useRouter();
   const searchParams = useSearchParams();
