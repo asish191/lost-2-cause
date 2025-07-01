@@ -10,14 +10,15 @@ interface SidebarContextType {
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Optionally persist state in localStorage
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('sidebarOpen');
-      return stored !== null ? JSON.parse(stored) : true;
+  // Always start with true to match SSR, update after mount
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sidebarOpen');
+    if (stored !== null) {
+      setSidebarOpen(JSON.parse(stored));
     }
-    return true;
-  });
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('sidebarOpen', JSON.stringify(sidebarOpen));
