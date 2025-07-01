@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { FaHome, FaBoxOpen, FaComments, FaListAlt, FaSignOutAlt, FaBars } from "react-icons/fa";
+import { MdSearch } from "react-icons/md";
 import Sidebar from "@/components/common/Sidebar";
 import { dashboardItems } from '@/constants/items';
 import { useSidebar } from "@/components/common/SidebarContext";
@@ -46,12 +47,44 @@ export default function DashboardForm() {
   const { sidebarOpen, setSidebarOpen } = useSidebar();
   // State for active menu in sidebar
   const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<Array<string>>([]);
   const router = useRouter();
 
   // Handle logout action
   const handleLogout = () => {
     router.push("/");
   };
+
+  // Filtered items based on search
+  const filteredItems = dashboardItems.filter(item =>
+    item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.tags.some(tag => tag.label.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  // Suggestions logic
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setSuggestions([]);
+      return;
+    }
+    const matches = dashboardItems.filter(item =>
+      item.title.toLowerCase().includes(searchQuery.toLowerCase())
+    ).map(item => item.title);
+    setSuggestions(matches.slice(0, 5));
+  }, [searchQuery]);
+
+  // Handle suggestion click
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
+  };
+
+  // Handle input focus/blur
+  const handleFocus = () => setShowSuggestions(true);
+  const handleBlur = () => setTimeout(() => setShowSuggestions(false), 100);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -65,6 +98,42 @@ export default function DashboardForm() {
       />
       {/* Main dashboard content */}
       <main className={`flex-1 p-8 bg-gray-100 min-h-screen relative ${sidebarOpen ? "ml-64" : "ml-20"} transition-all duration-300`}>
+        {/* Heading and Search Bar in a Row */}
+        <div className="flex flex-row items-center mb-8 mt-2 w-full gap-8">
+          <h1 className="text-3xl font-bold whitespace-nowrap flex-shrink-0">Welcome to Dashboard</h1>
+          <div className="relative max-w-xl w-full" style={{ maxWidth: '500px' }}>
+            <div className="flex items-center bg-white border-2 border-yellow-400 rounded-full shadow-md px-4 py-2 focus-within:ring-2 focus-within:ring-yellow-300 transition-all" style={{height: 48}}>
+              <input
+                type="text"
+                className="flex-1 bg-transparent outline-none text-gray-800 placeholder-gray-400 text-lg px-2"
+                placeholder="search..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onFocus={handleFocus}
+                onBlur={handleBlur}
+                style={{fontStyle: 'italic'}}
+                aria-label="Search items"
+              />
+              <button className="ml-2 bg-blue-400 hover:bg-blue-500 transition-colors rounded-full p-2 flex items-center justify-center" style={{width: 40, height: 40}}>
+                <MdSearch className="text-white text-2xl" />
+              </button>
+            </div>
+            {/* Suggestions Dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <ul className="absolute left-0 right-0 bg-white border border-gray-200 rounded-b-lg shadow-lg z-20 mt-1 max-h-48 overflow-y-auto">
+                {suggestions.map((suggestion, idx) => (
+                  <li
+                    key={idx}
+                    className="px-4 py-2 cursor-pointer hover:bg-yellow-100 text-gray-800"
+                    onMouseDown={() => handleSuggestionClick(suggestion)}
+                  >
+                    {suggestion}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
         {/* User info button */}
         <div className="fixed right-8 top-8 z-10">
           <button className="flex items-center gap-2 bg-white border border-gray-300 shadow px-4 py-2 rounded-full font-medium text-gray-700 hover:bg-gray-50 transition">
@@ -72,16 +141,13 @@ export default function DashboardForm() {
             <span>Demo User</span>
           </button>
         </div>
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">Welcome to Dashboard</h1>
-        </div>
         <div className="grid grid-cols-1 gap-6">
           {/* Items List Section */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold mb-4">Available Items</h2>
             {/* Render each item as an ItemCard */}
             <div className="space-y-4 max-h-[calc(100vh-250px)] overflow-y-auto pr-2 custom-scrollbar">
-              {dashboardItems.map((item) => (
+              {filteredItems.length > 0 ? filteredItems.map((item) => (
                 <ItemCard
                   key={item.title}
                   title={item.title}
@@ -106,7 +172,9 @@ export default function DashboardForm() {
                     </>
                   }
                 />
-              ))}
+              )) : (
+                <div className="text-center text-gray-500 py-8 text-lg">No items found.</div>
+              )}
             </div>
           </div>
         </div>
