@@ -5,66 +5,63 @@ import Image from "next/image";
 
 import { FaPlus, FaCheck, FaTimes, FaPaperclip } from "react-icons/fa";
 import { COLORS } from "@/constants/colors";
+import { useForm } from '@/hooks/useForm';
+import { Item, ItemType } from '@/types';
 
-interface Item {
-  id: string;
-  title: string;
-  description: string;
-  type: 'lost' | 'found';
-  location: string;
-  image?: string; // base64 url
-  resolved: boolean;
+interface ItemManagementFormProps {
+  initialItems?: Item[];
 }
 
-export default function ItemManagementForm() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [type, setType] = useState<'lost' | 'found'>("found");
-  const [location, setLocation] = useState("");
-  const [image, setImage] = useState<string | undefined>();
-  const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+export default function ItemManagementForm({ initialItems = [] }: ItemManagementFormProps) {
+  const [items, setItems] = useState<Item[]>(initialItems);
+
+  const { values, handleChange, handleBlur, reset } = useForm({
+    title: '',
+    description: '',
+    type: 'found' as ItemType,
+    location: '',
+    image: undefined,
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const newItem: Item = {
+        id: Date.now().toString(),
+        title: values.title,
+        description: values.description,
+        type: values.type,
+        location: values.location,
+        image: values.image,
+        resolved: false,
+      };
+      setItems([...items, newItem]);
+      reset();
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
+
+  const handleResolve = async (itemId: string) => {
+    try {
+      const updatedItem = items.find(item => item.id === itemId);
+      if (updatedItem) {
+        const newItems = items.map(item => 
+          item.id === itemId ? { ...item, resolved: !item.resolved } : item
+        );
+        setItems(newItems);
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onloadend = () => setImage(reader.result as string);
+    reader.onloadend = () => handleChange('image', reader.result as string);
     reader.readAsDataURL(file);
-  };
-
-  const handleAddItem = () => {
-    if (!title.trim()) {
-      setError("Item title is required");
-      return;
-    }
-    setError(null);
-    const newItem: Item = {
-      id: Date.now().toString(),
-      title,
-      description,
-      type,
-      location,
-      image,
-      resolved: false,
-    };
-    setItems((prev) => [newItem, ...prev]);
-    // reset the form
-    setTitle("");
-    setDescription("");
-    setLocation("");
-    setType('found');
-    setImage(undefined);
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const toggleResolved = (id: string) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, resolved: !item.resolved } : item
-      )
-    );
   };
 
   return (
@@ -78,17 +75,16 @@ export default function ItemManagementForm() {
           <input
             type="text"
             placeholder="Item title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={values.title}
+            onChange={(e) => handleChange('title', e.target.value)}
+            onBlur={() => handleBlur('title')}
             className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary"
           />
-          {error && (
-            <p className="text-red-500 text-sm">{error}</p>
-          )}
           <textarea
             placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={values.description}
+            onChange={(e) => handleChange('description', e.target.value)}
+            onBlur={() => handleBlur('description')}
             rows={3}
             className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary"
           />
@@ -98,8 +94,8 @@ export default function ItemManagementForm() {
               <input
                 type="radio"
                 value="lost"
-                checked={type === 'lost'}
-                onChange={() => setType('lost')}
+                checked={values.type === 'lost'}
+                onChange={() => handleChange('type', 'lost' as ItemType)}
               />
               Lost
             </label>
@@ -107,8 +103,8 @@ export default function ItemManagementForm() {
               <input
                 type="radio"
                 value="found"
-                checked={type === 'found'}
-                onChange={() => setType('found')}
+                checked={values.type === 'found'}
+                onChange={() => handleChange('type', 'found' as ItemType)}
               />
               Found
             </label>
@@ -117,13 +113,13 @@ export default function ItemManagementForm() {
           <input
             type="text"
             placeholder="Location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            value={values.location}
+            onChange={(e) => handleChange('location', e.target.value)}
+            onBlur={() => handleBlur('location')}
             className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <div className="flex items-center gap-4">
             <input
-              ref={fileInputRef}
               id="file-input"
               type="file"
               accept="image/*"
@@ -131,12 +127,12 @@ export default function ItemManagementForm() {
               className="hidden"
             />
             <label htmlFor="file-input" className="cursor-pointer text-primary hover:text-secondary flex items-center gap-2 font-medium">
-              <FaPaperclip /> {image ? 'Change image' : 'Attach image'}
+              <FaPaperclip /> {values.image ? 'Change image' : 'Attach image'}
             </label>
           </div>
-          {image && (
+          {values.image && (
             <Image
-              src={image}
+              src={values.image}
               alt="Preview"
               width={200}
               height={200}
@@ -145,7 +141,7 @@ export default function ItemManagementForm() {
           )}
           
           <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          onClick={handleAddItem}
+          onClick={handleSubmit}
           >
             Upload Item       
           </button>
@@ -196,7 +192,7 @@ export default function ItemManagementForm() {
                   </p>
                 </div>
                 <button
-                  onClick={() => toggleResolved(item.id)}
+                  onClick={() => handleResolve(item.id)}
                   style={{
                     backgroundColor: item.resolved ? COLORS.primary : COLORS.secondary,
                     color: 'white',
