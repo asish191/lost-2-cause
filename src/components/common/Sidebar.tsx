@@ -23,7 +23,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   >
     {/* Toggle Button - always visible */}
     <button
-      className="absolute -right-4 top-6 z-20 bg-blue-800 text-white rounded-full p-2 shadow-lg border-2 border-white hover:bg-blue-700 transition-all focus:outline-none"
+      className="absolute right-0 top-6 -translate-x-1/2 z-20 bg-blue-800 text-white rounded-full p-2 shadow-lg border-2 border-white hover:bg-blue-700 transition-all focus:outline-none"
       style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}
       onClick={() => setSidebarOpen(!sidebarOpen)}
       aria-label="Toggle Sidebar"
