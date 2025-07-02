@@ -153,7 +153,7 @@ export default function ItemManagementForm() {
       </div>
 
       {/* Items List found item */}
-      <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="bg-white p-6 rounded-lg shadow-md ">
         <h2 className="text-xl font-semibold mb-4">Your Posted Items</h2>
         {items.length === 0 ? (
           <p className="text-gray-600">No items yet.</p>
@@ -162,7 +162,7 @@ export default function ItemManagementForm() {
             {items.map((item) => (
               <li
                 key={item.id}
-                className="rounded-lg p-4 flex gap-4 items-start"
+                className="bg-gray-100 rounded-lg p-4 flex gap-4 items-start justify-center"
                 style={{
                   border: '2px solid',
                   borderRadius: '10px',
@@ -201,7 +201,7 @@ export default function ItemManagementForm() {
                     backgroundColor: item.resolved ? COLORS.primary : COLORS.secondary,
                     color: 'white',
                   }}
-                  className="shrink-0 px-4 py-2 rounded-md transition-colors"
+                  className="shrink-0 px-4 py-2 rounded-md transition-colors py-2"
                 >
                   {item.resolved ? (
                     <span className="flex items-center gap-2"><FaTimes /> Unresolve</span>

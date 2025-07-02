@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
@@ -12,8 +12,16 @@ export default function SignupForm() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
 
+
+  
   const [usr, stusr] = useState({
-    firstName: ""
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    passwordError: ""
+  
   })
 
   const router = useRouter();
@@ -49,8 +57,8 @@ export default function SignupForm() {
             <input
               id="firstName"
               type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              value={ usr.firstName}
+              onChange={(e) => {}}
               required
               className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
             />
@@ -62,7 +70,7 @@ export default function SignupForm() {
             <input
               id="lastName"
               type="text"
-              value={lastName}
+              value={usr.lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
               className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
@@ -76,7 +84,7 @@ export default function SignupForm() {
           <input
             id="email"
             type="email"
-            value={email}
+            value={usr.email}
             onChange={(e) => setEmail(e.target.value)}
             required
             placeholder="you@student.epita.fr"
@@ -90,7 +98,7 @@ export default function SignupForm() {
           <input
             id="password"
             type="password"
-            value={password}
+            value={usr.password}
             onChange={(e) => setPassword(e.target.value)}
             required
             minLength={8}
@@ -104,14 +112,14 @@ export default function SignupForm() {
           <input
             id="confirmPassword"
             type="password"
-            value={confirmPassword}
+            value={usr.confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             minLength={8}
             className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
           />
           {passwordError && (
-            <p className="mt-1 text-sm text-red-600">{passwordError}</p>
+            <p className="mt-1 text-sm text-red-600">{usr.}</p>
           )}
         </div>
         <button
