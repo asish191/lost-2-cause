@@ -5,38 +5,30 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
 export default function SignupForm() {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-
-
-  
-  const [usr, stusr] = useState({
+  const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
     passwordError: ""
-  
-  })
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     // Validate passwords match
-    if (password !== confirmPassword) {
-      setPasswordError('Passwords do not match');
+    if (form.password !== form.confirmPassword) {
+      setForm({ ...form, passwordError: 'Passwords do not match' });
       return;
     }
-    
     // Placeholder for signup logic (e.g., using next-auth)
-    console.log('Signup:', { firstName, lastName, email, password });
+    console.log('Signup:', form);
     // Redirect to login or home page after successful signup
     router.push('/login');
   };
@@ -56,9 +48,10 @@ export default function SignupForm() {
             </label>
             <input
               id="firstName"
+              name="firstName"
               type="text"
-              value={ usr.firstName}
-              onChange={(e) => {}}
+              value={form.firstName}
+              onChange={handleChange}
               required
               className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
             />
@@ -69,9 +62,10 @@ export default function SignupForm() {
             </label>
             <input
               id="lastName"
+              name="lastName"
               type="text"
-              value={usr.lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              value={form.lastName}
+              onChange={handleChange}
               required
               className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
             />
@@ -83,9 +77,10 @@ export default function SignupForm() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
-            value={usr.email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={form.email}
+            onChange={handleChange}
             required
             placeholder="you@student.epita.fr"
             className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
@@ -97,9 +92,10 @@ export default function SignupForm() {
           </label>
           <input
             id="password"
+            name="password"
             type="password"
-            value={usr.password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={form.password}
+            onChange={handleChange}
             required
             minLength={8}
             className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
@@ -111,15 +107,16 @@ export default function SignupForm() {
           </label>
           <input
             id="confirmPassword"
+            name="confirmPassword"
             type="password"
-            value={usr.confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            value={form.confirmPassword}
+            onChange={handleChange}
             required
             minLength={8}
             className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
           />
-          {passwordError && (
-            <p className="mt-1 text-sm text-red-600">{usr.}</p>
+          {form.passwordError && (
+            <p className="mt-1 text-sm text-red-600">{form.passwordError}</p>
           )}
         </div>
         <button
