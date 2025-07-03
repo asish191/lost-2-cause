@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Sidebar from "@/features/layout/components/Sidebar";
-import CommunicationHubForm from "@/features/chat/components/CommunicationHubForm";
+import CommunicationHubForm from "@/components/forms/CommunicationHubForm";
 
 export default function CommunicationHubPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
