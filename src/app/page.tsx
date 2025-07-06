@@ -44,7 +44,7 @@ export default function Home() {
             {/* Logo and Text */}
             <div className="flex items-center space-x-4">
               <Image
-                src="/logo-lost&cause.png"
+                src="/lost2Cause_logo.png"
                 alt="Lost2Cause Logo"
                 width={280}
                 height={80}
@@ -58,7 +58,7 @@ export default function Home() {
             <div className="flex items-center space-x-8">
               {/* Navigation Links */}
               <nav className="flex items-center space-x-8">
-                <Link href="/services" className="text-white/90 hover:text-white transition-colors">
+                <Link href="/admin-dashboard" className="text-white/90 hover:text-white transition-colors">
                   Services
                 </Link>
                 <Link href="/about" className="text-white/90 hover:text-white transition-colors">

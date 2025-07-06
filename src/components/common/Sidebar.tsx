@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { FaHome, FaBoxOpen, FaComments, FaListAlt, FaSignOutAlt, FaBars } from "react-icons/fa";
 import React from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface SidebarProps {
   sidebarOpen: boolean;
   setSidebarOpen: (open: boolean) => void;
   activeMenu: string;
   setActiveMenu: (menu: string) => void;
-  handleLogout: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -15,8 +15,10 @@ const Sidebar: React.FC<SidebarProps> = ({
   setSidebarOpen,
   activeMenu,
   setActiveMenu,
-  handleLogout,
-}) => (
+}) => {
+  const { logout } = useAuth();
+  
+  return (
   <aside
     className={`fixed transition-all duration-300 ease-in-out bg-gradient-to-br from-indigo-900 to-blue-800 shadow-2xl ${sidebarOpen ? "w-64" : "w-20"} h-screen flex flex-col`}
     style={{ borderTopRightRadius: sidebarOpen ? "2rem" : "1rem", borderBottomRightRadius: sidebarOpen ? "2rem" : "1rem" }}
@@ -72,13 +74,14 @@ const Sidebar: React.FC<SidebarProps> = ({
       </button>
     </nav>
     <button
-      onClick={handleLogout}
+      onClick={logout}
       className="flex items-center gap-4 px-4 py-3 text-white hover:bg-red-600 rounded-lg transition-colors mb-6 mt-auto"
     >
       <FaSignOutAlt className="text-xl" />
       <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>Logout</span>
     </button>
   </aside>
-);
+  );
+};
 
 export default Sidebar; 

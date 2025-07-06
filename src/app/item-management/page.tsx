@@ -49,6 +49,8 @@ export default function ItemManagementPage() {
     router.push("/");
   };
 
+  const allowedStatuses = ["found", "lost", "claimed", "resolved"] as const;
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
@@ -57,7 +59,6 @@ export default function ItemManagementPage() {
         setSidebarOpen={setSidebarOpen}
         activeMenu={activeMenu}
         setActiveMenu={setActiveMenu}
-        handleLogout={handleLogout}
       />
 
       {/* Main Content */}
@@ -90,7 +91,7 @@ export default function ItemManagementPage() {
                   key={item.id}
                   title={item.title}
                   description={item.description}
-                  status={item.status}
+                  status={allowedStatuses.includes(item.status as any) ? item.status as typeof allowedStatuses[number] : "lost"}
                   tags={item.tags}
                   location={item.location}
                   date={item.date}

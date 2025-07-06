@@ -6,7 +6,15 @@ import ItemCard from '@/components/common/ItemCard';
 import { COLORS } from '@/constants/colors';
 
 export default function ItemsPage() {
-  const [items, setItems] = useState([
+  const [items, setItems] = useState<Array<{
+    id: number;
+    title: string;
+    description: string;
+    status: 'found' | 'lost' | 'claimed' | 'resolved';
+    tags: string[];
+    location: string;
+    date: string;
+  }>>([
     {
       id: 1,
       title: 'Lost Laptop Charger',

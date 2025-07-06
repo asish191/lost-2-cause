@@ -8,7 +8,7 @@ const Header = () => (
         {/* Logo and Text */}
         <div className="flex items-center space-x-4">
           <Image
-            src="/logo-lost&cause.png"
+            src="/lost2Cause_logo.png"
             alt="Lost2Cause Logo"
             width={280}
             height={80}

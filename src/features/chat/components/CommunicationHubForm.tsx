@@ -1,1 +1,1 @@
-export { default } from "@/components/forms/CommunicatinHubForm";
+export { default } from "@/components/forms/CommunicationHubForm";
