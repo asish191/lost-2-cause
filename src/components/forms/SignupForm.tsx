@@ -28,38 +28,47 @@ export default function SignupForm() {
 
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('[Signup] Form submit triggered with values:', form);
     e.preventDefault();
     setApiError("");
     // Pure email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email)) {
+      console.warn('[Signup] Invalid email:', form.email);
       setForm({ ...form, emailError: "Please enter a valid email address." });
       return;
     }
     // Validate passwords match
     if (form.password !== form.confirmPassword) {
+      console.warn('[Signup] Passwords do not match:', form.password, form.confirmPassword);
       setForm({ ...form, passwordError: 'Passwords do not match' });
       return;
     }
     setLoading(true);
     try {
       const { register } = await import("@/services/authService");
-      const response = await register({
+      const payload = {
         email: form.email,
         password: form.password,
         confirm_password: form.confirmPassword,
         first_name: form.firstName,
         last_name: form.lastName,
-      });
+      };
+      console.log('[Signup] Calling register API with payload:', payload);
+      const response = await register(payload);
+      console.log('[Signup] Register API response:', response);
       if (response.message === "Registration successful") {
-        router.push('/login');
+        setShowSuccessModal(true);
       } else {
         setApiError(response.message || "Registration failed");
+        console.error('[Signup] Registration failed:', response);
       }
     } catch (err: any) {
       setApiError(err.message || "Registration failed");
+      console.error('[Signup] Exception during registration:', err);
     } finally {
       setLoading(false);
     }
@@ -77,6 +86,17 @@ export default function SignupForm() {
           open={!!apiError}
           message={apiError}
           onClose={() => setApiError("")}
+        />
+      )}
+      {showSuccessModal && (
+        <ErrorModal
+          open={showSuccessModal}
+          message="User created"
+          variant="success"
+          onClose={() => {
+            setShowSuccessModal(false);
+            router.push('/login');
+          }}
         />
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
