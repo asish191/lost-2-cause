@@ -15,6 +15,7 @@ module.exports = {
         success: '#48BB78',
         gradientStart: '#C3B1E1',
         gradientEnd: '#6B46C1',
+        'mint-500': 'oklch(0.72 0.11 178)',
       },
     },
   },

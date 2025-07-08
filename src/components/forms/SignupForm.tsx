@@ -3,6 +3,7 @@
 import { use, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import ErrorModal from '@/components/common/ErrorModal';
 
 export default function SignupForm() {
   const [form, setForm] = useState({
@@ -11,26 +12,57 @@ export default function SignupForm() {
     email: "",
     password: "",
     confirmPassword: "",
-    passwordError: ""
+    passwordError: "",
+    emailError: ""
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    if (e.target.name === 'email') {
+      setForm({ ...form, [e.target.name]: e.target.value, emailError: "" });
+    } else {
+      setForm({ ...form, [e.target.name]: e.target.value });
+    }
   };
 
   const router = useRouter();
 
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setApiError("");
+    // Pure email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      setForm({ ...form, emailError: "Please enter a valid email address." });
+      return;
+    }
     // Validate passwords match
     if (form.password !== form.confirmPassword) {
       setForm({ ...form, passwordError: 'Passwords do not match' });
       return;
     }
-    // Placeholder for signup logic (e.g., using next-auth)
-    console.log('Signup:', form);
-    // Redirect to login or home page after successful signup
-    router.push('/login');
+    setLoading(true);
+    try {
+      const { register } = await import("@/services/authService");
+      const response = await register({
+        email: form.email,
+        password: form.password,
+        confirm_password: form.confirmPassword,
+        first_name: form.firstName,
+        last_name: form.lastName,
+      });
+      if (response.message === "Registration successful") {
+        router.push('/login');
+      } else {
+        setApiError(response.message || "Registration failed");
+      }
+    } catch (err: any) {
+      setApiError(err.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSocialSignup = (provider: string) => {
@@ -40,6 +72,13 @@ export default function SignupForm() {
 
   return (
     <div className="space-y-6">
+      {apiError && (
+        <ErrorModal
+          open={!!apiError}
+          message={apiError}
+          onClose={() => setApiError("")}
+        />
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
