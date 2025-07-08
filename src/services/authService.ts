@@ -29,6 +29,8 @@ export async function register(payload: RegisterPayload): Promise<RegisterRespon
       body: JSON.stringify(payload),
     });
     console.log("Raw response:", response); 
+    console.log("Response status:", response.status); 
+    debugger;
     if (!response.ok) {
       let errorMsg = "Registration failed";
       try {
