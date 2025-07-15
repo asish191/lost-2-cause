@@ -3,7 +3,15 @@ import Link from "next/link";
 import { FaHome, FaBoxOpen, FaComments, FaListAlt, FaSignOutAlt, FaBars } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 
-const AppBar = ({ activeMenu, setActiveMenu, sidebarOpen, setSidebarOpen, handleLogout }) => (
+interface AppBarProps {
+  activeMenu: string;
+  setActiveMenu: (menu: string) => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean | ((open: boolean) => boolean)) => void;
+  handleLogout: () => void;
+}
+
+const AppBar: React.FC<AppBarProps> = ({ activeMenu, setActiveMenu, sidebarOpen, setSidebarOpen, handleLogout }) => (
   <aside
     className={`fixed transition-all duration-300 ease-in-out bg-gradient-to-br from-indigo-900 to-blue-800 shadow-2xl ${sidebarOpen ? "w-64" : "w-20"} h-screen flex flex-col`}
     style={{ borderTopRightRadius: sidebarOpen ? "2rem" : "1rem", borderBottomRightRadius: sidebarOpen ? "2rem" : "1rem" }}
@@ -12,7 +20,7 @@ const AppBar = ({ activeMenu, setActiveMenu, sidebarOpen, setSidebarOpen, handle
     <button
       className="absolute -right-4 top-6 z-20 bg-blue-800 text-white rounded-full p-2 shadow-lg border-2 border-white hover:bg-blue-700 transition-all focus:outline-none"
       style={{ boxShadow: "0 4px 16px rgba(0,0,0,0.15)" }}
-      onClick={() => setSidebarOpen((open) => !open)}
+      onClick={() => setSidebarOpen((open: boolean) => !open)}
       aria-label="Toggle Sidebar"
     >
       <FaBars size={22} />

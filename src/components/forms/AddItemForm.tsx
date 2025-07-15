@@ -5,13 +5,22 @@ import { COLORS } from '@/constants/colors';
 import Input from './inputs/Input';
 import Textarea from './inputs/Textarea';
 
+interface ItemFormData {
+  title: string;
+  description: string;
+  type: string;
+  location: string;
+  date: string;
+  tags: string[];
+}
+
 interface AddItemFormProps {
-  onSubmit: (data: FormData) => void;
+  onSubmit: (data: ItemFormData) => void;
   onClear?: () => void;
 }
 
 export default function AddItemForm({ onSubmit, onClear }: AddItemFormProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ItemFormData>({
     title: '',
     description: '',
     type: 'lost',
@@ -23,7 +32,7 @@ export default function AddItemForm({ onSubmit, onClear }: AddItemFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
-    // Clear the form after submission
+
     setFormData({
       title: '',
       description: '',
@@ -37,7 +46,7 @@ export default function AddItemForm({ onSubmit, onClear }: AddItemFormProps) {
     }
   };
 
-  const handleChange = (field: keyof typeof formData, value: string) => {
+  const handleChange = (field: keyof ItemFormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,

@@ -119,7 +119,7 @@ export default function SignupForm() {
             className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
           />
           {passwordError && (
-            <p className="mt-1 text-sm text-red-600">{usr.}</p>
+            <p className="mt-1 text-sm text-red-600">{passwordError}</p>
           )}
         </div>
         <button

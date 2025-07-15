@@ -13,6 +13,7 @@ export interface Message {
   content: string;
   timestamp: string;
   senderRole: 'admin' | 'user' | 'system';
+  conversationId: string;
   attachment?: { type: 'image'; url: string };
   status?: 'sent' | 'delivered' | 'read';
   reactions?: Reaction[];
@@ -87,6 +88,7 @@ export function simulateAdminResponse({
       content: "Thanks for reaching out! I'm looking into this for you and will get back to you shortly.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       senderRole: 'admin',
+      conversationId: 'default', // Add this line
     };
     setMessages((prev: Message[]) => [...prev, reply]);
     setNotifications((prev: number) => prev + 1);

@@ -1,5 +1,5 @@
 export const IMAGES = {
-  logo: '/logo-lost&cause.png',
+  logo: '/lost2Cause_logo.png',
   homeBg: '/bg-home_school.jpg',
   // Add more image paths as needed
 }; 

@@ -23,7 +23,6 @@ export default function CommunicationHubPage() {
         setSidebarOpen={setSidebarOpen}
         activeMenu={activeMenu}
         setActiveMenu={setActiveMenu}
-        handleLogout={handleLogout}
       />
       {/* Main Content */}
       <main className={`flex-1 p-8 bg-gray-100 min-h-screen relative ${sidebarOpen ? "ml-64" : "ml-20"} transition-all duration-300`}>

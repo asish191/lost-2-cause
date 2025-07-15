@@ -1,4 +1,7 @@
+'use client';
+
 import { createContext, useContext, useState, ReactNode } from 'react';
+import { useRouter } from 'next/navigation';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -13,6 +16,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const router = useRouter();
 
   const isAuthenticated = !!user;
 
@@ -29,6 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     setUser(null);
+    router.push("/");
   };
 
   const signup = async (userData: User) => {

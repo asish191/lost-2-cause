@@ -48,10 +48,7 @@ export default function DashboardForm() {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const router = useRouter();
 
-  // Handle logout action
-  const handleLogout = () => {
-    router.push("/");
-  };
+
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -61,7 +58,6 @@ export default function DashboardForm() {
         setSidebarOpen={setSidebarOpen}
         activeMenu={activeMenu}
         setActiveMenu={setActiveMenu}
-        handleLogout={handleLogout}
       />
       {/* Main dashboard content */}
       <main className={`flex-1 p-8 bg-gray-100 min-h-screen relative ${sidebarOpen ? "ml-64" : "ml-20"} transition-all duration-300`}>
