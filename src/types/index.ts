@@ -4,7 +4,7 @@ export interface User {
   firstName: string;
   lastName: string;
   email: string;
-  password: string;
+  token: string;
 }
 
 // Item Types
@@ -16,6 +16,25 @@ export interface Item {
   location: string;
   image: string | undefined;
   resolved: boolean;
+}
+
+// Registration Types
+export interface RegisterPayload {
+  email: string;
+  first_name: string;
+  last_name: string;
+  password: string;
+}
+
+export interface RegisterResponse {
+  statusCode: number;
+  message: string;
+  body: {
+    user: {
+      email: string;
+      token: string;
+    }
+  }
 }
 
 // Utility type for form values
@@ -31,6 +50,17 @@ export interface SignupFormData {
   passwordError: string;
 }
 
+export interface LoginResponse {
+  statusCode: number;
+  message: string;
+  body: {
+    user: {
+      email: string;
+      token: string;
+    }
+  }
+}
+
 // Layout Types
 export interface SidebarItem {
   id: string;
@@ -41,8 +71,13 @@ export interface SidebarItem {
 
 // API Response Types
 export interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-  error?: string;
+  statusCode: number;
+  message: string;
+  body: T;
+}
+
+export interface User {
+  email: string;
+  token: string;
+  id: string;
 }

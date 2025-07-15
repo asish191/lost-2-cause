@@ -1,44 +1,98 @@
 'use client';
 
-import { use, useState } from 'react';
+import { useState } from 'react';
+import { register } from '@/services/authService';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import ErrorModal from '@/components/common/ErrorModal';
 
 export default function SignupForm() {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-
-
-  
-  const [usr, stusr] = useState({
+  const [form, setForm] = useState({
     firstName: "",
     lastName: "",
     email: "",
     password: "",
     confirmPassword: "",
-    passwordError: ""
-  
-  })
+    passwordError: "",
+    emailError: ""
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.name === 'email') {
+      setForm({ ...form, [e.target.name]: e.target.value, emailError: "" });
+    } else {
+      setForm({ ...form, [e.target.name]: e.target.value });
+    }
+  };
 
   const router = useRouter();
 
+  const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('[Signup] Form submit triggered with values:', form);
     e.preventDefault();
-    
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      setPasswordError('Passwords do not match');
+    setApiError("");
+    // Pure email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      console.warn('[Signup] Invalid email:', form.email);
+      setForm({ ...form, emailError: "Please enter a valid email address." });
       return;
     }
-    
-    // Placeholder for signup logic (e.g., using next-auth)
-    console.log('Signup:', { firstName, lastName, email, password });
-    // Redirect to login or home page after successful signup
-    router.push('/login');
+    // Validate passwords match
+    if (form.password !== form.confirmPassword) {
+      console.warn('[Signup] Passwords do not match:', form.password, form.confirmPassword);
+      setForm({ ...form, passwordError: 'Passwords do not match' });
+      return;
+    }
+    setLoading(true);
+    try {
+      // No need to import register here since it's already imported at the top
+      const payload = {
+        email: form.email,
+        password: form.password,
+        confirm_password: form.confirmPassword,
+        first_name: form.firstName,
+        last_name: form.lastName,
+      };
+      console.log('[Signup] Calling register API with payload:', payload);
+      
+      const response = await register({
+        email: form.email,
+        password: form.password,
+        confirm_password: form.confirmPassword,
+        first_name: form.firstName,
+        last_name: form.lastName
+      });
+      console.log('[Signup] Register API response:', response);
+      
+      if (response.statusCode === 201) {
+        // Show success message with green color
+        setApiError('');
+        setShowSuccessModal(true);
+      } else if (response.message && response.message.includes('success')) {
+        setApiError('');
+        setShowSuccessModal(true);
+      } else if (response.message) {
+        setApiError(response.message);
+        console.error('[Signup] Registration failed with message:', response.message);
+      } else {
+        setApiError("Registration failed: Unexpected response");
+        console.error('[Signup] Registration failed with unexpected response:', response);
+      }
+    } catch (err: any) {
+      const errorMessage = err.message || "Registration failed: Unknown error";
+      console.error('[Signup] Exception during registration:', {
+        error: err,
+        message: errorMessage
+      });
+      setApiError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSocialSignup = (provider: string) => {
@@ -48,6 +102,27 @@ export default function SignupForm() {
 
   return (
     <div className="space-y-6">
+      {apiError && (
+        <div className="text-red-600 text-center">
+          {apiError}
+        </div>
+      )}
+      <ErrorModal
+        open={!!apiError}
+        message={apiError}
+        onClose={() => setApiError("")}
+      />
+      {showSuccessModal && (
+        <ErrorModal
+          open={showSuccessModal}
+          message="User created"
+          variant="success"
+          onClose={() => {
+            setShowSuccessModal(false);
+            router.push('/login');
+          }}
+        />
+      )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -56,9 +131,10 @@ export default function SignupForm() {
             </label>
             <input
               id="firstName"
+              name="firstName"
               type="text"
-              value={ usr.firstName}
-              onChange={(e) => {}}
+              value={form.firstName}
+              onChange={handleChange}
               required
               className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
             />
@@ -69,9 +145,10 @@ export default function SignupForm() {
             </label>
             <input
               id="lastName"
+              name="lastName"
               type="text"
-              value={usr.lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              value={form.lastName}
+              onChange={handleChange}
               required
               className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
             />
@@ -83,9 +160,10 @@ export default function SignupForm() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
-            value={usr.email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={form.email}
+            onChange={handleChange}
             required
             placeholder="you@student.epita.fr"
             className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
@@ -97,9 +175,10 @@ export default function SignupForm() {
           </label>
           <input
             id="password"
+            name="password"
             type="password"
-            value={usr.password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={form.password}
+            onChange={handleChange}
             required
             minLength={8}
             className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
@@ -111,15 +190,16 @@ export default function SignupForm() {
           </label>
           <input
             id="confirmPassword"
+            name="confirmPassword"
             type="password"
-            value={usr.confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
+            value={form.confirmPassword}
+            onChange={handleChange}
             required
             minLength={8}
             className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-green-500 focus:border-green-500"
           />
-          {passwordError && (
-            <p className="mt-1 text-sm text-red-600">{passwordError}</p>
+          {form.passwordError && (
+            <p className="mt-1 text-sm text-red-600">{form.passwordError}</p>
           )}
         </div>
         <button
