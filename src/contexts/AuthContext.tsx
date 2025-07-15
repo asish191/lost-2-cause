@@ -76,21 +76,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) throw new Error('Login failed');
 
       const data = await response.json();
-      const token = data.user.token;
       
       // Store token securely in cookies
-      Cookies.set('auth_token', token, { 
+      Cookies.set('auth_token', data.body.user.token, { 
         expires: 7, // 7 days
         secure: true, // Only send over HTTPS
         sameSite: 'strict' // Prevent CSRF
       });
       
       setUser({
-        id: data.user.userId,
-        firstName: data.user.firstName || '',
-        lastName: data.user.lastName || '',
-        email: data.user.email,
-        token
+        id: data.body.user.userId,
+        firstName: data.body.user.firstName || '',
+        lastName: data.body.user.lastName || '',
+        email: data.body.user.email,
+        token: data.body.user.token
       });
       
       // Redirect to dashboard after successful login

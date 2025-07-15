@@ -3,16 +3,29 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useAuth } from '@/contexts/AuthContext';
+import ErrorModal from '@/components/common/ErrorModal';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [showErrorModal, setShowErrorModal] = useState(false);
   const router = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
 
-    router.push('/');
+    try {
+      await login(email, password);
+      router.push('/dashboard');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
+      setError(errorMessage);
+      setShowErrorModal(true);
+    }
   };
 
   const handleSocialLogin = (provider: string) => {
@@ -57,6 +70,15 @@ export default function LoginForm() {
           Login
         </button>
       </form>
+
+      <ErrorModal
+        open={showErrorModal}
+        message={error}
+        onClose={() => {
+          setShowErrorModal(false);
+          setError('');
+        }}
+      />
 
       <div className="text-center">
         <p className="text-gray-600">
