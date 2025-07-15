@@ -4,29 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import { FaSearch, FaPaperclip, FaCheckDouble, FaSmile, FaUser, FaCog, FaBell } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 import { availableReactions, quickReplies, userColors } from '@/constants/communication';
-import { handleReaction as handleReactionUtil, simulateAdminResponse as simulateAdminResponseUtil } from '@/utils/communication';
+import { handleReaction as handleReactionUtil, simulateAdminResponse as simulateAdminResponseUtil, Message, Reaction } from '@/utils/communication';
 
 interface Attachment {
   type: 'image';
   url: string;
 }
 
-interface Reaction {
-  emoji: string;
-  count: number;
-  users: string[];
-}
 
-interface Message {
-  id: string;
-  sender: string;
-  content: string;
-  timestamp: string;
-  senderRole: 'admin' | 'user' | 'system';
-  attachment?: Attachment;
-  status?: 'sent' | 'delivered' | 'read';
-  reactions?: Reaction[];
-}
+
+
 
 interface CommunicationHubProps {
   item?: string | null;
@@ -200,13 +187,14 @@ export default function CommunicationHubForm({ item }: CommunicationHubProps) {
   useEffect(() => {
     setUserColor(userColors[Math.floor(Math.random() * userColors.length)]);
     const initialMessages: Message[] = item
-      ? [
+              ? [
           {
             id: 'system-1',
             sender: 'System',
             content: `Inquiry about: ${item}`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             senderRole: 'system',
+            conversationId: 'default',
           },
           {
             id: 'admin-1',
@@ -214,15 +202,17 @@ export default function CommunicationHubForm({ item }: CommunicationHubProps) {
             content: `Hello! How can I help you regarding the ${item}?`,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             senderRole: 'admin',
+            conversationId: 'default',
           }
         ]
-      : [
+              : [
           {
             id: 'admin-1',
             sender: 'Admin',
             content: 'Hello! How can I assist you today?',
             timestamp: '12:00 PM',
             senderRole: 'admin',
+            conversationId: 'default',
           }
         ];
     setMessages(initialMessages);
@@ -271,6 +261,7 @@ export default function CommunicationHubForm({ item }: CommunicationHubProps) {
         content: messageContent,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         senderRole: 'user',
+        conversationId: 'default',
         attachment,
         status: 'sent'
       };

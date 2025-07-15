@@ -32,7 +32,7 @@ export default function AddItemForm({ onSubmit, onClear }: AddItemFormProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
-    // Clear the form after submission
+
     setFormData({
       title: '',
       description: '',

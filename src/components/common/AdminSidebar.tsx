@@ -17,7 +17,14 @@ const AdminSidebar: React.FC<SidebarProps> = ({
   activeMenu,
   setActiveMenu,
 }) => {
-  const [itemMgmtOpen, setItemMgmtOpen] = React.useState(false);
+  // Automatically open dropdown if on a subpage
+  const isItemMgmtActive = ["item", "upload", "viewall", "manage"].includes(activeMenu);
+  const [itemMgmtOpen, setItemMgmtOpen] = React.useState(isItemMgmtActive);
+  // Keep dropdown open if navigating between subpages
+  React.useEffect(() => {
+    if (isItemMgmtActive && !itemMgmtOpen) setItemMgmtOpen(true);
+    if (!isItemMgmtActive && itemMgmtOpen) setItemMgmtOpen(false);
+  }, [activeMenu]);
   const { logout } = useAuth();
 
   return (
@@ -80,17 +87,17 @@ const AdminSidebar: React.FC<SidebarProps> = ({
         {itemMgmtOpen && sidebarOpen && (
           <div className="flex flex-col gap-1 ml-10">
             <Link
-              href="/admin-itemManagement/add_items"
+              href="/admin-item-management"
               onClick={() => setActiveMenu('upload')}
               className={`flex items-center gap-3 px-2 py-2 text-white rounded-md transition-colors transition-transform duration-200 hover:scale-105 focus:scale-105 text-sm relative
                 ${activeMenu === 'upload' ? 'bg-blue-600 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-cyan-400 before:rounded-l-md' : 'hover:bg-blue-600'}`}
               style={{ position: 'relative' }}
             >
-              <FaUpload className="text-base" />
+            <FaUpload className="text-base" />
               Add Items
             </Link>
             <Link
-              href="/viewAllItems"
+              href="/admin-view-all-items"
               onClick={() => setActiveMenu('viewall')}
               className={`flex items-center gap-3 px-2 py-2 text-white rounded-md transition-colors transition-transform duration-200 hover:scale-105 focus:scale-105 text-sm relative
                 ${activeMenu === 'viewall' ? 'bg-blue-600 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-cyan-400 before:rounded-l-md' : 'hover:bg-blue-600'}`}
@@ -102,7 +109,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
 
           </div>
         )}
-        <Link
+                <Link
           href="/admin-communicationHub"
           onClick={() => setActiveMenu('comm')}
           className={`flex items-center gap-4 px-4 py-3 text-white rounded-lg transition-colors transition-transform duration-200 hover:scale-105 focus:scale-105 relative
@@ -110,7 +117,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           style={{ position: 'relative' }}
         >
           <FaComments className="text-xl" />
-          <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>Admin Communication Hub</span>
+          <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>A.Communication Hub</span>
         </Link>
         <Link
           href="/admin-launchActionBit"
@@ -120,8 +127,9 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           style={{ position: 'relative' }}
         >
           <FaRocket className="text-xl" />
-          <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>Launch Action Bit</span>
+          <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>Launching Action-Bit</span>
         </Link>
+
       </nav>
       <button
         onClick={logout}
