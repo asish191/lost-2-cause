@@ -11,15 +11,13 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder for authentication logic (e.g., using next-auth)
-    console.log('Login:', { email, password });
-    // Redirect to dashboard or home page after successful login
+
     router.push('/');
   };
 
   const handleSocialLogin = (provider: string) => {
-    // Placeholder for social login logic
-    console.log(`Logging in with ${provider}`);
+
+    
   };
 
   return (
