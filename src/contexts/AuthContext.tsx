@@ -27,7 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         firstName: '',
         lastName: '',
         email: '',
-        token
+        token,
+        isAdmin: false // Default to false for initial user
       };
     }
     return null;
@@ -76,24 +77,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) throw new Error('Login failed');
 
       const data = await response.json();
-      
+      console.log('LOGIN RESPONSE USER:', data.body.user); // Debug log
+      const userData = data.body.user.user; // Fix: go one level deeper
+
       // Store token securely in cookies
-      Cookies.set('auth_token', data.body.user.token, { 
+      Cookies.set('auth_token', userData.token, { 
         expires: 7, // 7 days
         secure: true, // Only send over HTTPS
         sameSite: 'strict' // Prevent CSRF
       });
       
       setUser({
-        id: data.body.user.userId,
-        firstName: data.body.user.firstName || '',
-        lastName: data.body.user.lastName || '',
-        email: data.body.user.email,
-        token: data.body.user.token
+        id: userData.userID,
+        firstName: userData.name?.split(' ')[0] || '',
+        lastName: userData.name?.split(' ')[1] || '',
+        email: userData.email,
+        token: userData.token,
+        isAdmin: userData.isAdmin ?? false
       });
       
-      // Redirect to dashboard after successful login
-      router.push('/dashboard');
+      // Redirect based on isAdmin
+      if (userData.isAdmin) {
+        router.push('/admin-dashboard');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -118,7 +126,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           firstName: userData.first_name,
           lastName: userData.last_name,
           email: userData.email,
-          token: data.body.user.token
+          token: data.body.user.token,
+          isAdmin: false // RegisterPayload does not have isAdmin, so default to false
         });
       } else {
         throw new Error(data.message || 'Registration failed');

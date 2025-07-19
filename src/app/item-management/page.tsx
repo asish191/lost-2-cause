@@ -7,11 +7,13 @@ import AddItemForm from '@/components/forms/AddItemForm';
 import ItemCard from '@/components/common/ItemCard';
 import { FaHome, FaBoxOpen, FaComments, FaListAlt, FaSignOutAlt, FaBars } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function ItemManagementPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeMenu, setActiveMenu] = useState('item-management');
   const router = useRouter();
+  const { user } = useAuth();
 
   const [items, setItems] = useState([
     {
@@ -66,8 +68,10 @@ export default function ItemManagementPage() {
         {/* User Button */}
         <div className="fixed right-8 top-8 z-10">
           <button className="flex items-center gap-2 bg-white border border-gray-300 shadow px-4 py-2 rounded-full font-medium text-gray-700 hover:bg-gray-50 transition">
-            <span className="inline-block w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold">D</span>
-            <span>Demo User</span>
+            <span className="inline-block w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold">
+              {user?.firstName?.[0] || 'U'}
+            </span>
+            <span>{user ? `${user.firstName} ${user.lastName}` : 'User'}</span>
           </button>
         </div>
 

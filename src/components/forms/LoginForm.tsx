@@ -20,7 +20,7 @@ export default function LoginForm() {
 
     try {
       await login(email, password);
-      router.push('/dashboard');
+      // Redirection is now handled in AuthContext based on user type
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Invalid email or password';
       setError(errorMessage);

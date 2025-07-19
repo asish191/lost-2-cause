@@ -5,6 +5,7 @@ import { FaSearch, FaPaperclip, FaCheckDouble, FaSmile, FaUser, FaCog, FaBell } 
 import { motion, AnimatePresence } from 'framer-motion';
 import { availableReactions, quickReplies, userColors } from '@/constants/communication';
 import { handleReaction as handleReactionUtil, simulateAdminResponse as simulateAdminResponseUtil, Message, Reaction } from '@/utils/communication';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Attachment {
   type: 'image';
@@ -182,6 +183,7 @@ export default function CommunicationHubForm({ item }: CommunicationHubProps) {
   const [soundEnabled, setSoundEnabled] = useState(true);
   // Ref for audio element
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { user } = useAuth();
 
   // Set user color and initial messages on mount or when item changes
   useEffect(() => {
@@ -325,7 +327,7 @@ export default function CommunicationHubForm({ item }: CommunicationHubProps) {
               <FaUser className="text-white text-sm" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold">You</p>
+              <p className="font-semibold">{user ? `${user.firstName} ${user.lastName}` : 'You'}</p>
               <p className="text-sm text-[#95e6e6] flex items-center">
                 <span className="w-2 h-2 bg-[#39cccc] rounded-full mr-2"></span>
                 Online

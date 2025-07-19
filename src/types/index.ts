@@ -5,6 +5,7 @@ export interface User {
   lastName: string;
   email: string;
   token: string;
+  isAdmin: boolean; // Added for admin/user distinction
 }
 
 // Item Types
@@ -74,10 +75,4 @@ export interface ApiResponse<T> {
   statusCode: number;
   message: string;
   body: T;
-}
-
-export interface User {
-  email: string;
-  token: string;
-  id: string;
 }
