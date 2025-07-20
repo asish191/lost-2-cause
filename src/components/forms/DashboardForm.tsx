@@ -6,6 +6,7 @@ import { FaHome, FaBoxOpen, FaComments, FaListAlt, FaSignOutAlt, FaBars } from "
 import Sidebar from "@/features/layout/components/Sidebar";
 import { dashboardItems } from '@/constants/items';
 import { useAuth } from '@/contexts/AuthContext';
+import React from "react";
 
 // ItemCard subcomponent
 function ItemCard({
@@ -50,6 +51,47 @@ export default function DashboardForm() {
   const router = useRouter();
   const { user } = useAuth();
 
+  // Filter/search state
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const [location, setLocation] = useState("");
+  const [filteredItems, setFilteredItems] = useState(dashboardItems);
+
+  // Extract unique locations from tags
+  const allLocations = Array.from(
+    new Set(
+      dashboardItems.flatMap(item =>
+        item.tags.map(tag => tag.label)
+      )
+    )
+  );
+
+  // Filtering logic
+  function filterItems() {
+    let items = dashboardItems;
+    if (search.trim()) {
+      const s = search.trim().toLowerCase();
+      items = items.filter(item =>
+        item.title.toLowerCase().includes(s) ||
+        item.description.toLowerCase().includes(s)
+      );
+    }
+    if (status) {
+      items = items.filter(item => item.status.toLowerCase() === status.toLowerCase());
+    }
+    if (location) {
+      items = items.filter(item =>
+        item.tags.some(tag => tag.label.toLowerCase() === location.toLowerCase())
+      );
+    }
+    setFilteredItems(items);
+  }
+
+  // Run filter when filter values change
+  React.useEffect(() => {
+    filterItems();
+    // eslint-disable-next-line
+  }, [search, status, location]);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -72,7 +114,49 @@ export default function DashboardForm() {
           </button>
         </div>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">Welcome to Your Dashboard</h1>
+          <h1 className="text-3xl font-bold text-[#03045e] mb-4">Welcome to Your Dashboard</h1>
+          <p className="text-[#03045e]">Manage and view all items in the system</p>
+        </div>
+        {/* Filter and Search Section */}
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="flex-1 min-w-[200px]">
+              <input
+                type="text"
+                placeholder="Search items..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <select
+              value={status}
+              onChange={e => setStatus(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">All Status</option>
+              <option value="Available">Available</option>
+              <option value="Pending">Pending</option>
+              <option value="Claimed">Claimed</option>
+            </select>
+            <select
+              value={location}
+              onChange={e => setLocation(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">All Locations</option>
+              {allLocations.map(loc => (
+                <option key={loc} value={loc}>{loc}</option>
+              ))}
+            </select>
+            <button
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              onClick={filterItems}
+              type="button"
+            >
+              Filter
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 gap-6">
           {/* Items List Section */}
@@ -80,7 +164,7 @@ export default function DashboardForm() {
             <h2 className="text-xl font-semibold mb-4">Available Items</h2>
             {/* Render each item as an ItemCard */}
             <div className="space-y-4 max-h-[calc(100vh-250px)] overflow-y-auto pr-2 custom-scrollbar">
-              {dashboardItems.map((item) => (
+              {filteredItems.map((item) => (
                 <ItemCard
                   key={item.title}
                   title={item.title}

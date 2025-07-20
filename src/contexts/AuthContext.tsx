@@ -145,13 +145,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setUser(null);
       Cookies.remove('auth_token');
-      router.push('/login');
+      router.push('/'); // Redirect to homepage instead of login
     } catch (error) {
       console.error('Logout error:', error);
       // Even if server logout fails, we still clear local state
       setUser(null);
       Cookies.remove('auth_token');
-      router.push('/login');
+      router.push('/'); // Redirect to homepage instead of login
     }
   };
 

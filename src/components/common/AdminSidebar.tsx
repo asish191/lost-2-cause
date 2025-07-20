@@ -45,15 +45,15 @@ const AdminSidebar: React.FC<SidebarProps> = ({
         <FaBars size={22} />
       </button>
       <div className="flex flex-col items-start px-4 py-6">
-        <div className="flex flex-col items-start gap-2">
+        <div className="flex flex-col items-start gap-2 h-20 justify-center">
           <Image
             src="/lost2Cause_logo.png"
             alt="Lost2Cause Logo"
             width={60}
             height={60}
-            className="rounded-xl shadow-lg border-2 border-white/20 hover:scale-105 transition-transform duration-200"
+            className={`rounded-xl shadow-lg border-2 border-white/20 hover:scale-105 transition-transform duration-200 ${sidebarOpen ? "opacity-100 visible" : "opacity-0 invisible"}`}
           />
-          <span className={`text-white font-extrabold text-xl tracking-wide transition-all duration-300 ${sidebarOpen ? "opacity-100" : "opacity-0 w-0"}`}>Lost2Cause</span>
+          <span className={`text-white font-extrabold text-xl tracking-wide transition-all duration-300 ${sidebarOpen ? "opacity-100 visible" : "opacity-0 w-0 invisible"}`}>Lost2Cause</span>
         </div>
       </div>
       <nav className="flex-1 flex flex-col gap-2 mt-4">

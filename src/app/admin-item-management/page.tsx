@@ -41,7 +41,7 @@ export default function AdminItemManagementPage() {
         </div>
 
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">Admin Item Management</h1>
+          <h1 className="text-3xl font-bold text-[#03045e] mb-4">Admin Item Management</h1>
         </div>
 
         {/* Use the same form and item list as the user item management page */}
