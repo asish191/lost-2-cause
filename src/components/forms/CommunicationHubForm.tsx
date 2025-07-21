@@ -36,7 +36,15 @@ interface Conversation {
 }
 
 interface CommunicationHubProps {
-  item?: string | null;
+  item?: {
+    id?: string | null;
+    name?: string | null;
+    desc?: string | null;
+    status?: string | null;
+    floor?: string | null;
+    uploader?: string | null;
+    image?: string | null;
+  };
   users: User[];
 }
 
@@ -294,6 +302,8 @@ const DEMO_USERS: User[] = [
 
 export default function CommunicationHubForm({ item, users }: CommunicationHubProps) {
   const { user: currentUser } = useAuth();
+  // Use item directly as itemDetails
+  const itemDetails = item;
   // Use useMemo to ensure stable reference for users
   const sidebarUsers = useMemo(() => {
     if (!currentUser) return [];
@@ -548,17 +558,32 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
 
   return (
     <div className="flex h-full w-full bg-gray-100 rounded-2xl shadow-2xl border border-gray-300/80 overflow-hidden">
-      {/* User List Sidebar */}
-      <UserList
-        users={sidebarUsers}
-        selectedUserId={selectedUserId}
-        onUserSelect={handleUserSelect}
-        searchQuery={userSearchQuery}
-        setSearchQuery={setUserSearchQuery}
-        filterStatus={userFilterStatus}
-        setFilterStatus={setUserFilterStatus}
-      />
-
+      {/* User List Sidebar with profile at top */}
+      <div className="w-80 bg-[#002b55] border-r border-[#001a33] flex flex-col text-white">
+        {/* Profile section at top */}
+        <div className="p-6 border-b border-[#001a33] flex flex-col items-center gap-4">
+          {/* Current user avatar */}
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#39cccc] to-[#2aa1a1] flex items-center justify-center text-3xl font-bold text-white shadow-lg">
+            {currentUser?.firstName ? currentUser.firstName[0] : 'U'}
+            {currentUser?.lastName ? currentUser.lastName[0] : ''}
+          </div>
+          <div className="text-center">
+            <div className="font-bold text-lg text-white">{currentUser ? `${currentUser.firstName} ${currentUser.lastName}` : 'User'}</div>
+            <div className="text-xs text-[#a0d2ff]">{currentUser?.email}</div>
+          </div>
+        </div>
+        {/* User List */}
+        <UserList
+          users={sidebarUsers}
+          selectedUserId={selectedUserId}
+          onUserSelect={handleUserSelect}
+          searchQuery={userSearchQuery}
+          setSearchQuery={setUserSearchQuery}
+          filterStatus={userFilterStatus}
+          setFilterStatus={setUserFilterStatus}
+        />
+        {/* Footer remains unchanged */}
+      </div>
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Chat Header */}
@@ -567,7 +592,7 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
             <div className="flex items-center space-x-4">
               <div>
                 <p className="font-bold text-[#a0d2ff] text-md">Lost2Cause</p>
-                <h1 className="font-extrabold text-2xl text-white">Admin Communication Hub</h1>
+                <h1 className="font-extrabold text-2xl text-white">Communication Hub</h1>
               </div>
             </div>
             <div className="flex items-center space-x-3">
@@ -584,7 +609,6 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
                   </span>
                 )}
               </button>
-
               {/* User Display with Dropdown */}
               {selectedUser && (
                 <div className="relative">
@@ -615,7 +639,6 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
                     </div>
                     <FaEllipsisV className="text-white/60 w-4 h-4" />
                   </button>
-
                   {/* Dropdown Menu */}
                   <AnimatePresence>
                     {showUserDropdown && (
@@ -657,7 +680,6 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
             </div>
           </div>
         </div>
-
         {/* Search Bar */}
         <div className="p-4 border-b border-gray-200 bg-white">
           <div className="relative">
@@ -671,9 +693,21 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
             <FaSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
         </div>
-        
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto p-6 space-y-2 bg-[#f0f4e4] relative" onClick={() => setActivePicker(null)}>
+          {/* Regarding this item system message */}
+          {itemDetails && itemDetails.name && selectedUserId && (
+            <div className="flex justify-center mb-4">
+              <div className="max-w-lg px-4 py-2 rounded-full shadow-sm bg-blue-100 text-blue-900 text-xs italic flex items-center gap-2">
+                <span>Regarding this item:</span>
+                <span className="font-semibold">{itemDetails.name}</span>
+                {itemDetails.desc && <span className="text-gray-700">- {itemDetails.desc}</span>}
+                {itemDetails.image && (
+                  <img src={itemDetails.image} alt={itemDetails.name || ''} className="w-8 h-8 object-cover rounded-md border ml-2" />
+                )}
+              </div>
+            </div>
+          )}
           {/* Notification Popup */}
           <NotificationPopup show={showNotifications} />
           

@@ -119,16 +119,6 @@ const AdminSidebar: React.FC<SidebarProps> = ({
           <FaComments className="text-xl" />
           <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>A.Communication Hub</span>
         </Link>
-        <Link
-          href="/admin-launchActionBit"
-          onClick={() => setActiveMenu('launch')}
-          className={`flex items-center gap-4 px-4 py-3 text-white rounded-lg transition-colors transition-transform duration-200 hover:scale-105 focus:scale-105 relative w-full text-left
-            ${activeMenu === 'launch' ? 'bg-blue-700 shadow-lg ring-2 ring-indigo-400/60 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-cyan-400 before:rounded-l-lg' : 'hover:bg-blue-700'}`}
-          style={{ position: 'relative' }}
-        >
-          <FaRocket className="text-xl" />
-          <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>Launching Action-Bit</span>
-        </Link>
 
       </nav>
       <button

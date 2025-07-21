@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Sidebar from "@/features/layout/components/Sidebar";
 import { useAuth } from '@/contexts/AuthContext';
-import React from "react";
+import React, { useEffect } from "react";
 
 // Sample items data (replace with fetch logic as needed)
 const items = [
@@ -164,6 +164,7 @@ export default function DashboardForm() {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const router = useRouter();
   const { user } = useAuth();
+  const [showProfile, setShowProfile] = useState(true);
 
   // Filter/search state
   const [search, setSearch] = useState("");
@@ -198,6 +199,14 @@ export default function DashboardForm() {
     // eslint-disable-next-line
   }, [search, status, floor]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowProfile(window.scrollY === 0);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar navigation */}
@@ -210,14 +219,20 @@ export default function DashboardForm() {
       {/* Main dashboard content */}
       <main className={`flex-1 p-8 bg-gray-100 min-h-screen relative ${sidebarOpen ? "ml-64" : "ml-20"} transition-all duration-300`}>
         {/* User info button */}
-        <div className="fixed right-8 top-8 z-10">
-          <button className="flex items-center gap-2 bg-white border border-gray-300 shadow px-4 py-2 rounded-full font-medium text-gray-700 hover:bg-gray-50 transition">
-            <span className="inline-block w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold">
-              {user?.firstName?.[0] || 'U'}
-            </span>
-            <span>{user ? `${user.firstName} ${user.lastName}` : 'User'}</span>
-          </button>
-        </div>
+        {showProfile && (
+          <div className="fixed right-8 top-8 z-10">
+            <button className="flex items-center gap-3 bg-white border border-gray-200 shadow-lg px-4 py-2 rounded-full font-medium text-gray-800 hover:bg-gray-50 transition min-w-[140px]">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500 shadow" />
+              ) : (
+                <span className="inline-flex w-10 h-10 bg-gradient-to-br from-indigo-900 to-blue-800 text-white rounded-full items-center justify-center font-bold text-xl border-2 border-indigo-500 shadow leading-none select-none tracking-wide">
+                  {user?.firstName?.[0] || 'U'}{user?.lastName?.[0] || ''}
+                </span>
+              )}
+              <span className="ml-1 font-semibold text-base truncate max-w-[90px]">{user ? `${user.firstName} ${user.lastName}` : 'User'}</span>
+            </button>
+          </div>
+        )}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-[#03045e] mb-4">Welcome to Your Dashboard</h1>
           <p className="text-[#03045e]">Manage and view all items in the system</p>
@@ -253,19 +268,29 @@ export default function DashboardForm() {
                 <option key={f} value={f}>{f}</option>
               ))}
             </select>
-            <button
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              onClick={filterItems}
-              type="button"
-            >
-              Filter
-            </button>
           </div>
         </div>
         {/* Redesigned grid for items */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {filteredItems.map((item, idx) => (
-            <ItemCard key={item._id} item={item} index={idx} />
+            <ItemCard
+              key={item._id}
+              item={item}
+              index={idx}
+              onClaim={() => {
+                // Navigate to communication hub with item details in query params
+                const params = new URLSearchParams({
+                  id: item._id,
+                  name: item.itemName || '',
+                  desc: item.itemDescription || '',
+                  status: item.status || '',
+                  floor: String(item.floor || ''),
+                  uploader: item.uploaderName || '',
+                  image: item.imageUrl || ''
+                });
+                router.push(`/communicationHub?${params.toString()}`);
+              }}
+            />
           ))}
           {filteredItems.length === 0 && (
             <div className="text-gray-500 text-center py-8 col-span-full">No items found.</div>

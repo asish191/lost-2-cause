@@ -51,7 +51,16 @@ export default function CommunicationHubPage() {
   const [activeMenu, setActiveMenu] = useState('comm');
   const router = useRouter();
   const searchParams = useSearchParams();
-  const item = searchParams?.get('item');
+  // Collect all item details from query params
+  const itemDetails = {
+    id: searchParams?.get('id'),
+    name: searchParams?.get('name'),
+    desc: searchParams?.get('desc'),
+    status: searchParams?.get('status'),
+    floor: searchParams?.get('floor'),
+    uploader: searchParams?.get('uploader'),
+    image: searchParams?.get('image'),
+  };
   const { user: currentUser } = useAuth();
 
   const isAdmin = currentUser?.isAdmin;
@@ -77,7 +86,7 @@ export default function CommunicationHubPage() {
       )}
       <main className={`flex-1 bg-gray-100 h-screen relative ${sidebarOpen ? "ml-64" : "ml-20"} transition-all duration-300`}>
         <div className="h-full w-full p-4">
-          <CommunicationHubForm item={item} users={usersForChat} />
+          <CommunicationHubForm item={itemDetails} users={usersForChat} />
         </div>
       </main>
     </div>

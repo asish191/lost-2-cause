@@ -56,15 +56,6 @@ const AppBar: React.FC<AppBarProps> = ({ activeMenu, setActiveMenu, sidebarOpen,
         <FaComments className="text-xl" />
         <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>Communication Hub</span>
       </Link>
-      <button
-        type="button"
-        onClick={() => setActiveMenu('log')}
-        className={`flex items-center gap-4 px-4 py-3 text-white rounded-lg transition-colors relative w-full text-left
-          ${activeMenu === 'log' ? 'bg-blue-700 shadow-[0_4px_24px_0_rgba(49,130,206,0.45),0_1.5px_8px_0_rgba(49,130,206,0.25)] ring-2 ring-indigo-400/60' : 'hover:bg-blue-700'}`}
-      >
-        <FaListAlt className="text-xl" />
-        <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>Action Status Log</span>
-      </button>
     </nav>
     <button
       onClick={handleLogout}

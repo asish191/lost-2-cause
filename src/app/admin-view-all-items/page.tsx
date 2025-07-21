@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { COLORS } from '@/constants/colors';
 import AdminSidebar from '@/components/common/AdminSidebar';
 import { useRouter } from "next/navigation";
@@ -100,7 +100,18 @@ function ItemCard({ item, index }: { item: typeof items[number]; index: number }
   const uploaderName = item.uploaderName || fallbackUploaderNames[index % fallbackUploaderNames.length];
   const router = useRouter();
   const handleChat = (action: 'claim' | 'lost') => {
-    router.push(`/communicationHub?userId=${item.uploaderId}&itemId=${item._id}&action=${action}`);
+    // Pass all item details as query params
+    const params = new URLSearchParams({
+      id: item._id,
+      name: item.itemName || '',
+      desc: item.itemDescription || '',
+      status: item.status || '',
+      floor: String(item.floor || ''),
+      uploader: item.uploaderName || '',
+      image: item.imageUrl || '',
+      action
+    });
+    router.push(`/communicationHub?${params.toString()}`);
   };
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
@@ -159,6 +170,48 @@ export default function AdminViewAllItemsPage() {
   const [activeMenu, setActiveMenu] = useState('viewall');
   const router = useRouter();
   const { user } = useAuth();
+  const [showProfile, setShowProfile] = useState(true);
+
+  // Add search/filter state
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const [floor, setFloor] = useState("");
+  const [filteredItems, setFilteredItems] = useState(items);
+
+  // Extract unique floors
+  const allFloors = Array.from(new Set(items.map(item => item.floor).filter(Boolean)));
+
+  // Filtering logic (copied from DashboardForm)
+  function filterItems() {
+    let filtered = items;
+    if (search.trim()) {
+      const s = search.trim().toLowerCase();
+      filtered = filtered.filter(item =>
+        (item.itemName || "").toLowerCase().includes(s) ||
+        (item.itemDescription || "").toLowerCase().includes(s)
+      );
+    }
+    if (status) {
+      filtered = filtered.filter(item => (item.status || "").toLowerCase() === status.toLowerCase());
+    }
+    if (floor) {
+      filtered = filtered.filter(item => String(item.floor) === floor);
+    }
+    setFilteredItems(filtered);
+  }
+
+  useEffect(() => {
+    filterItems();
+    // eslint-disable-next-line
+  }, [search, status, floor]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowProfile(window.scrollY === 0);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleLogout = () => {
     router.push("/");
@@ -178,54 +231,65 @@ export default function AdminViewAllItemsPage() {
       {/* Main Content */}
       <main className={`flex-1 p-8 bg-gray-100 min-h-screen relative ${sidebarOpen ? "ml-64" : "ml-20"} transition-all duration-300`}>
         {/* User Button */}
-        <div className="fixed right-8 top-8 z-10">
-          <button className="flex items-center gap-2 bg-white border border-gray-300 shadow px-4 py-2 rounded-full font-medium text-gray-700 hover:bg-gray-50 transition">
-            <span className="inline-block w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold">
-              {user?.firstName?.[0] || 'A'}
-            </span>
-            <span>{user ? `${user.firstName} ${user.lastName}` : 'Admin'}</span>
-          </button>
-        </div>
+        {showProfile && (
+          <div className="fixed right-8 top-8 z-10">
+            <button className="flex items-center gap-3 bg-white border border-gray-200 shadow-lg px-4 py-2 rounded-full font-medium text-gray-800 hover:bg-gray-50 transition min-w-[140px]">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500 shadow" />
+              ) : (
+                <span className="inline-flex w-10 h-10 bg-gradient-to-br from-indigo-900 to-blue-800 text-white rounded-full items-center justify-center font-bold text-xl border-2 border-indigo-500 shadow leading-none select-none tracking-wide">
+                  {user?.firstName?.[0] || 'A'}{user?.lastName?.[0] || ''}
+                </span>
+              )}
+              <span className="ml-1 font-semibold text-base truncate max-w-[90px]">{user ? `${user.firstName} ${user.lastName}` : 'Admin'}</span>
+            </button>
+          </div>
+        )}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-4">View All Items</h1>
           <p className="text-gray-600">Manage and view all items in the system</p>
         </div>
-        {/* Filter and Search Section (UI only, not functional for demo) */}
+        {/* Filter and Search Section (now functional) */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex flex-wrap gap-4 items-center">
             <div className="flex-1 min-w-[200px]">
               <input
                 type="text"
                 placeholder="Search items..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <select
+              value={status}
+              onChange={e => setStatus(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
               <option value="">All Status</option>
               <option value="lost">Lost</option>
               <option value="found">Found</option>
               <option value="claimed">Claimed</option>
               <option value="resolved">Resolved</option>
             </select>
-            <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <select
+              value={floor}
+              onChange={e => setFloor(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
               <option value="">All Floors</option>
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
+              {allFloors.map(f => (
+                <option key={f} value={f}>{f}</option>
+              ))}
             </select>
-            <button className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-              Filter
-            </button>
           </div>
         </div>
         {/* Items Grid Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {items.map((item, idx) => (
+          {filteredItems.map((item, idx) => (
             <ItemCard key={item._id} item={item} index={idx} />
           ))}
-          {items.length === 0 && (
+          {filteredItems.length === 0 && (
             <div className="text-gray-500 text-center py-8 col-span-full">No items found.</div>
           )}
         </div>

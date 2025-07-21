@@ -6,6 +6,7 @@ export interface User {
   email: string;
   token: string;
   isAdmin: boolean; // Added for admin/user distinction
+  avatar?: string; // Optional avatar URL
 }
 
 // Item Types

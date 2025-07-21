@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { COLORS } from '@/constants/colors';
 import Sidebar from '@/components/common/Sidebar';
 import AddItemForm from '@/components/forms/AddItemForm';
@@ -14,6 +14,7 @@ export default function ItemManagementPage() {
   const [activeMenu, setActiveMenu] = useState('item-management');
   const router = useRouter();
   const { user } = useAuth();
+  const [showProfile, setShowProfile] = useState(true);
 
   const [items, setItems] = useState([
     {
@@ -53,6 +54,14 @@ export default function ItemManagementPage() {
 
   const allowedStatuses = ["found", "lost", "claimed", "resolved"] as const;
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowProfile(window.scrollY === 0);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
@@ -66,14 +75,20 @@ export default function ItemManagementPage() {
       {/* Main Content */}
       <main className={`flex-1 p-8 bg-gray-100 min-h-screen relative ${sidebarOpen ? "ml-64" : "ml-20"} transition-all duration-300`}>
         {/* User Button */}
-        <div className="fixed right-8 top-8 z-10">
-          <button className="flex items-center gap-2 bg-white border border-gray-300 shadow px-4 py-2 rounded-full font-medium text-gray-700 hover:bg-gray-50 transition">
-            <span className="inline-block w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center font-bold">
-              {user?.firstName?.[0] || 'U'}
-            </span>
-            <span>{user ? `${user.firstName} ${user.lastName}` : 'User'}</span>
-          </button>
-        </div>
+        {showProfile && (
+          <div className="fixed right-8 top-8 z-10">
+            <button className="flex items-center gap-3 bg-white border border-gray-200 shadow-lg px-4 py-2 rounded-full font-medium text-gray-800 hover:bg-gray-50 transition min-w-[140px]">
+              {user?.avatar ? (
+                <img src={user.avatar} alt="Avatar" className="w-10 h-10 rounded-full object-cover border-2 border-indigo-500 shadow" />
+              ) : (
+                <span className="inline-flex w-10 h-10 bg-gradient-to-br from-indigo-900 to-blue-800 text-white rounded-full items-center justify-center font-bold text-xl border-2 border-indigo-500 shadow leading-none select-none tracking-wide">
+                  {user?.firstName?.[0] || 'U'}{user?.lastName?.[0] || ''}
+                </span>
+              )}
+              <span className="ml-1 font-semibold text-base truncate max-w-[90px]">{user ? `${user.firstName} ${user.lastName}` : 'User'}</span>
+            </button>
+          </div>
+        )}
 
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-4">Item Management</h1>
