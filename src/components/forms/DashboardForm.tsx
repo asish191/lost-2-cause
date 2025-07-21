@@ -20,7 +20,7 @@ const items = [
     uploaderId: "001",
     uploadedAt: "2025-07-21T11:34:09.421Z",
     __v: 0,
-    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753097702/my_uploads/j5y6gld6qsgqz3rw5gpm.jpg"
+    imageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80" // hair band
   },
   {
     _id: "687e25b170618cd1087047cc",
@@ -34,7 +34,7 @@ const items = [
     uploaderId: "002",
     uploadedAt: "2025-07-21T12:00:00.000Z",
     __v: 0,
-    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753098000/my_uploads/abc123.jpg"
+    imageUrl: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80" // water bottle
   },
   {
     _id: "687e25b170618cd1087047cd",
@@ -48,7 +48,7 @@ const items = [
     uploaderId: "003",
     uploadedAt: "2025-07-21T12:15:00.000Z",
     __v: 0,
-    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753098100/my_uploads/def456.jpg"
+    imageUrl: "https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=400&q=80" // notebook
   },
   {
     _id: "687e25b170618cd1087047ce",
@@ -62,7 +62,7 @@ const items = [
     uploaderId: "004",
     uploadedAt: "2025-07-21T12:30:00.000Z",
     __v: 0,
-    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753098200/my_uploads/ghi789.jpg"
+    imageUrl: "https://images.unsplash.com/photo-1513258496099-48168024aec0?auto=format&fit=crop&w=400&q=80" // pencil box
   },
   {
     _id: "687e25b170618cd1087047cf",
@@ -76,7 +76,7 @@ const items = [
     uploaderId: "005",
     uploadedAt: "2025-07-21T12:45:00.000Z",
     __v: 0,
-    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753098300/my_uploads/jkl012.jpg"
+    imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=400&q=80" // lunch box
   },
   {
     _id: "687e25b170618cd1087047d0",
@@ -90,7 +90,7 @@ const items = [
     uploaderId: "006",
     uploadedAt: "2025-07-21T13:00:00.000Z",
     __v: 0,
-    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753098400/my_uploads/mno345.jpg"
+    imageUrl: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80" // geometry box
   }
 ];
 
