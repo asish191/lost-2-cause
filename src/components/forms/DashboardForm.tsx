@@ -2,42 +2,156 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { FaHome, FaBoxOpen, FaComments, FaListAlt, FaSignOutAlt, FaBars } from "react-icons/fa";
 import Sidebar from "@/features/layout/components/Sidebar";
-import { dashboardItems } from '@/constants/items';
 import { useAuth } from '@/contexts/AuthContext';
 import React from "react";
 
-// ItemCard subcomponent
+// Sample items data (replace with fetch logic as needed)
+const items = [
+  {
+    _id: "687e25b170618cd1087047cb",
+    publicId: "my_uploads/j5y6gld6qsgqz3rw5gpm",
+    itemName: "hair band",
+    itemDescription: "hairband is white",
+    status: "lost",
+    floor: 2,
+    tags: [],
+    uploaderName: "Prajwal Reddy",
+    uploaderId: "001",
+    uploadedAt: "2025-07-21T11:34:09.421Z",
+    __v: 0,
+    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753097702/my_uploads/j5y6gld6qsgqz3rw5gpm.jpg"
+  },
+  {
+    _id: "687e25b170618cd1087047cc",
+    publicId: "my_uploads/abc123",
+    itemName: "water bottle",
+    itemDescription: "blue bottle with sticker",
+    status: "found",
+    floor: 1,
+    tags: [],
+    uploaderName: "Aarav Singh",
+    uploaderId: "002",
+    uploadedAt: "2025-07-21T12:00:00.000Z",
+    __v: 0,
+    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753098000/my_uploads/abc123.jpg"
+  },
+  {
+    _id: "687e25b170618cd1087047cd",
+    publicId: "my_uploads/def456",
+    itemName: "notebook",
+    itemDescription: "red notebook, ruled pages",
+    status: "lost",
+    floor: 3,
+    tags: [],
+    uploaderName: "Sara Khan",
+    uploaderId: "003",
+    uploadedAt: "2025-07-21T12:15:00.000Z",
+    __v: 0,
+    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753098100/my_uploads/def456.jpg"
+  },
+  {
+    _id: "687e25b170618cd1087047ce",
+    publicId: "my_uploads/ghi789",
+    itemName: "pencil box",
+    itemDescription: "green pencil box with cartoon",
+    status: "found",
+    floor: 4,
+    tags: [],
+    uploaderName: "Rohan Mehta",
+    uploaderId: "004",
+    uploadedAt: "2025-07-21T12:30:00.000Z",
+    __v: 0,
+    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753098200/my_uploads/ghi789.jpg"
+  },
+  {
+    _id: "687e25b170618cd1087047cf",
+    publicId: "my_uploads/jkl012",
+    itemName: "lunch box",
+    itemDescription: "yellow lunch box, round shape",
+    status: "lost",
+    floor: 5,
+    tags: [],
+    uploaderName: "Meera Patel",
+    uploaderId: "005",
+    uploadedAt: "2025-07-21T12:45:00.000Z",
+    __v: 0,
+    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753098300/my_uploads/jkl012.jpg"
+  },
+  {
+    _id: "687e25b170618cd1087047d0",
+    publicId: "my_uploads/mno345",
+    itemName: "geometry box",
+    itemDescription: "black geometry box, metallic",
+    status: "found",
+    floor: 2,
+    tags: [],
+    uploaderName: "Kabir Das",
+    uploaderId: "006",
+    uploadedAt: "2025-07-21T13:00:00.000Z",
+    __v: 0,
+    imageUrl: "https://res.cloudinary.com/dwvolugrr/image/upload/v1753098400/my_uploads/mno345.jpg"
+  }
+];
+
+// Helper for fallback uploader names
+const fallbackUploaderNames = ["Asish", "Manthan", "Prajwal", "Umair", "Prasanth", "Talha"];
+
+// Redesigned ItemCard subcomponent
 function ItemCard({
-  title,
-  description,
-  tags,
-  status,
-  statusColor,
-  actions
+  item,
+  onClaim,
+  index
 }: {
-  title: string;
-  description: string;
-  tags: { label: string; color: string }[];
-  status: string;
-  statusColor: string;
-  actions: React.ReactNode;
+  item: typeof items[number];
+  onClaim?: () => void;
+  index: number;
 }) {
+  // Pick fallback uploader name if missing
+  const uploaderName = item.uploaderName || fallbackUploaderNames[index % fallbackUploaderNames.length];
   return (
-    <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-      <div className="flex justify-between items-start">
-        <div>
-          <h3 className="font-semibold text-lg">{title}</h3>
-          <p className="text-gray-600 text-sm mt-1">{description}</p>
-          <div className="flex flex-wrap gap-2 mt-2">
-            <span className={`px-2 py-1 ${statusColor} rounded-full text-xs`}>{status}</span>
-            {tags.map((tag, idx) => (
-              <span key={idx} className={`px-2 py-1 ${tag.color} rounded-full text-xs`}>{tag.label}</span>
-            ))}
-          </div>
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
+      {/* Image */}
+      {item.imageUrl && (
+        <img
+          src={item.imageUrl}
+          alt={item.itemName || "Item image"}
+          className="w-full h-48 object-cover"
+        />
+      )}
+      {/* Content */}
+      <div className="p-4 flex-1 flex flex-col">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-semibold text-gray-800 truncate">{item.itemName || "Unnamed Item"}</h3>
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+            item.status === 'found'
+              ? 'bg-green-100 text-green-800'
+              : item.status === 'claimed'
+              ? 'bg-purple-100 text-purple-800'
+              : item.status === 'resolved'
+              ? 'bg-blue-100 text-blue-800'
+              : 'bg-yellow-100 text-yellow-800'
+          }`}>
+            {(item.status || "unknown").toUpperCase()}
+          </span>
         </div>
-        <div className="flex items-center gap-2">{actions}</div>
+        <p className="text-gray-600 text-xs mb-1">Uploaded by: <span className="font-medium text-gray-800">{uploaderName}</span></p>
+        <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.itemDescription || "No description provided."}</p>
+        <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-2">
+          {item.floor && <span className="bg-blue-50 px-2 py-1 rounded">Floor: {item.floor}</span>}
+          {item.uploadedAt && <span className="bg-gray-50 px-2 py-1 rounded">{new Date(item.uploadedAt).toLocaleDateString()}</span>}
+        </div>
+        <div className="mt-auto flex gap-2">
+          {item.status === 'found' ? (
+            <button className="px-4 py-2 rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors w-full" onClick={onClaim}>
+              Claim
+            </button>
+          ) : (
+            <button className="px-4 py-2 rounded-md text-sm font-medium text-white bg-gray-400 cursor-not-allowed w-full" disabled>
+              Lost
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -54,44 +168,35 @@ export default function DashboardForm() {
   // Filter/search state
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
-  const [location, setLocation] = useState("");
-  const [filteredItems, setFilteredItems] = useState(dashboardItems);
+  const [floor, setFloor] = useState("");
+  const [filteredItems, setFilteredItems] = useState(items);
 
-  // Extract unique locations from tags
-  const allLocations = Array.from(
-    new Set(
-      dashboardItems.flatMap(item =>
-        item.tags.map(tag => tag.label)
-      )
-    )
-  );
+  // Extract unique floors
+  const allFloors = Array.from(new Set(items.map(item => item.floor).filter(Boolean)));
 
   // Filtering logic
   function filterItems() {
-    let items = dashboardItems;
+    let filtered = items;
     if (search.trim()) {
       const s = search.trim().toLowerCase();
-      items = items.filter(item =>
-        item.title.toLowerCase().includes(s) ||
-        item.description.toLowerCase().includes(s)
+      filtered = filtered.filter(item =>
+        (item.itemName || "").toLowerCase().includes(s) ||
+        (item.itemDescription || "").toLowerCase().includes(s)
       );
     }
     if (status) {
-      items = items.filter(item => item.status.toLowerCase() === status.toLowerCase());
+      filtered = filtered.filter(item => (item.status || "").toLowerCase() === status.toLowerCase());
     }
-    if (location) {
-      items = items.filter(item =>
-        item.tags.some(tag => tag.label.toLowerCase() === location.toLowerCase())
-      );
+    if (floor) {
+      filtered = filtered.filter(item => String(item.floor) === floor);
     }
-    setFilteredItems(items);
+    setFilteredItems(filtered);
   }
 
-  // Run filter when filter values change
   React.useEffect(() => {
     filterItems();
     // eslint-disable-next-line
-  }, [search, status, location]);
+  }, [search, status, floor]);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -135,18 +240,17 @@ export default function DashboardForm() {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Status</option>
-              <option value="Available">Available</option>
-              <option value="Pending">Pending</option>
-              <option value="Claimed">Claimed</option>
+              <option value="found">Found</option>
+              <option value="lost">Lost</option>
             </select>
             <select
-              value={location}
-              onChange={e => setLocation(e.target.value)}
+              value={floor}
+              onChange={e => setFloor(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="">All Locations</option>
-              {allLocations.map(loc => (
-                <option key={loc} value={loc}>{loc}</option>
+              <option value="">All Floors</option>
+              {allFloors.map(f => (
+                <option key={f} value={f}>{f}</option>
               ))}
             </select>
             <button
@@ -158,40 +262,14 @@ export default function DashboardForm() {
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-6">
-          {/* Items List Section */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold mb-4">Available Items</h2>
-            {/* Render each item as an ItemCard */}
-            <div className="space-y-4 max-h-[calc(100vh-250px)] overflow-y-auto pr-2 custom-scrollbar">
-              {filteredItems.map((item) => (
-                <ItemCard
-                  key={item.title}
-                  title={item.title}
-                  description={item.description}
-                  tags={item.tags}
-                  status={item.status}
-                  statusColor={item.statusColor}
-                  actions={
-                    <>
-                      {item.claimable ? (
-                        <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
-                          Claim Item
-                        </button>
-                      ) : (
-                        <button className="px-4 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed" disabled>
-                          Claimed
-                        </button>
-                      )}
-                      <Link href={item.discussHref} className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">
-                        Discuss
-                      </Link>
-                    </>
-                  }
-                />
-              ))}
-            </div>
-          </div>
+        {/* Redesigned grid for items */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {filteredItems.map((item, idx) => (
+            <ItemCard key={item._id} item={item} index={idx} />
+          ))}
+          {filteredItems.length === 0 && (
+            <div className="text-gray-500 text-center py-8 col-span-full">No items found.</div>
+          )}
         </div>
       </main>
     </div>
