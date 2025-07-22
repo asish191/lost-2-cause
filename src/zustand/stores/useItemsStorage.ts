@@ -9,11 +9,23 @@ interface ItemsState {
   error: string | null;
   currentPage: number;
   hasMore: boolean;
-  setItems: (data: any) => void;
+  currentSearch: string;
+  setItems: (data: Item[]) => void;
+  setSearch: (search: string) => void;
   getItems: (search?: string, page?: number) => Promise<void>;
   reset: () => void;
-  uploadItem: (data: any) => Promise<void>;
+  uploadItem: (data: FormData) => Promise<void>;
 }
+interface UploadItemData {
+  image: File;
+  itemName: string;
+  itemDescription: string;
+  status: string;
+  floor: string;
+  uploaderName: string;
+  tags: string;
+}
+
 
 const useItemsStore = create(
   devtools(
@@ -24,8 +36,9 @@ const useItemsStore = create(
         error: null,
         currentPage: 1,
         hasMore: true,
+        currentSearch: '',
         setItems: (data: Item[]) => set({ items: data }),
-        
+        setSearch: (search: string) => set({ currentSearch: search }),
 
         reset: () =>
           set({
@@ -58,12 +71,11 @@ const useItemsStore = create(
         },
 
         // Upload Item
-        uploadItem: async (data: any) => {
+        uploadItem: async (data: FormData) => {
           set({ isLoading: true, error: null });
           try {
             const response = await postRequest({ endpoint: `/upload`, payload: data });
-            const updatedItems = await getRequest({ endpoint: `/upload?limit=20` });
-            set({ items: updatedItems.data.items });
+            console.log('Upload response:', response);
             return response.data;
           } catch (err: any) {
             set({ error: err });

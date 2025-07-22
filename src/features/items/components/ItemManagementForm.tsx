@@ -2,11 +2,13 @@
 
 import { useState, useRef, ChangeEvent } from "react";
 import Image from "next/image";
-
 import { FaPlus, FaCheck, FaTimes, FaPaperclip } from "react-icons/fa";
 import { COLORS } from "@/constants/colors";
 import { useForm } from '@/hooks/useForm';
 import { Item, ItemType } from '@/types';
+import useItemsStore from '@/zustand/stores/useItemsStorage';
+import { useAuth } from '@/contexts/AuthContext';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface ItemManagementFormProps {
   initialItems?: Item[];
@@ -14,6 +16,7 @@ interface ItemManagementFormProps {
 
 export default function ItemManagementForm({ initialItems = [] }: ItemManagementFormProps) {
   const [items, setItems] = useState<Item[]>(initialItems);
+  const { user } = useAuth();
 
   const { values, handleChange, handleBlur, reset } = useForm({
     title: '',
@@ -23,9 +26,34 @@ export default function ItemManagementForm({ initialItems = [] }: ItemManagement
     image: undefined,
   });
 
+  const { uploadItem, isLoading } = useItemsStore() as { uploadItem: (data: FormData) => Promise<void>, isLoading: boolean };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Create FormData for upload
+      const formData = new FormData();
+      
+      // Required fields with defaults
+      formData.append('itemName', values.title);
+      formData.append('itemDescription', values.description);
+      formData.append('status', values.type); // 'found' or 'lost'
+      formData.append('floor', String(Math.floor(Math.random() * 5) + 1)); // Random floor between 1-5
+      formData.append('uploaderName', user ? `${user.firstName} ${user.lastName}` : 'Anonymous');
+      if (user?.id) {
+        formData.append('userId', user.id);
+      }
+      
+      // Optional fields
+      if (values.image) {
+        formData.append('image', values.image);
+      }
+
+      await uploadItem(formData);
+      
+      toast.success('Item uploaded successfully!');
+      
+      // Add the new item to local state
       const newItem: Item = {
         id: Date.now().toString(),
         title: values.title,
@@ -36,42 +64,48 @@ export default function ItemManagementForm({ initialItems = [] }: ItemManagement
         resolved: false,
       };
       setItems([...items, newItem]);
+
+      toast.success('Item uploaded successfully!');
       reset();
     } catch (error) {
       console.error('Error:', error);
-    }
-  };
-
-  const handleResolve = async (itemId: string) => {
-    try {
-      const updatedItem = items.find(item => item.id === itemId);
-      if (updatedItem) {
-        const newItems = items.map(item => 
-          item.id === itemId ? { ...item, resolved: !item.resolved } : item
-        );
-        setItems(newItems);
-      }
-    } catch (error) {
-      console.error('Error:', error);
+      toast.error('Failed to upload item. Please try again.');
     }
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = () => handleChange('image', reader.result as string);
-    reader.readAsDataURL(file);
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please select a valid image file (JPEG, PNG, GIF, or WebP)');
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+    if (file.size > maxSize) {
+      toast.error('Image size must be less than 5MB');
+      e.target.value = ''; // Reset input
+      return;
+    }
+
+    handleChange('image', file);
+    toast.success('Image selected successfully!');
   };
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      {/* Upload Form found item */}
+    <div className="space-y-6">
+      <Toaster position="top-right" />
+      {/* Form */}
       <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <FaPlus /> Found/Lost Item Upload
         </h2>
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="text"
             placeholder="Item title"
@@ -80,6 +114,7 @@ export default function ItemManagementForm({ initialItems = [] }: ItemManagement
             onBlur={() => handleBlur('title')}
             className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary"
           />
+
           <textarea
             placeholder="Description"
             value={values.description}
@@ -88,6 +123,7 @@ export default function ItemManagementForm({ initialItems = [] }: ItemManagement
             rows={3}
             className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary"
           />
+
           {/* Type Radio Button lost and found */}
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-2">
@@ -118,96 +154,70 @@ export default function ItemManagementForm({ initialItems = [] }: ItemManagement
             onBlur={() => handleBlur('location')}
             className="w-full border border-gray-300 rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary"
           />
-          <div className="flex items-center gap-4">
-            <input
-              id="file-input"
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="hidden"
-            />
-            <label htmlFor="file-input" className="cursor-pointer text-primary hover:text-secondary flex items-center gap-2 font-medium">
-              <FaPaperclip /> {values.image ? 'Change image' : 'Attach image'}
+          <div className="flex items-center gap-4 mt-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+              <span className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary cursor-pointer">
+                <FaPaperclip className="mr-2" /> Attach Image
+              </span>
             </label>
+            {values.image && (
+              <span className="text-sm text-green-600">✓ Image selected</span>
+            )}
           </div>
-          {values.image && (
-            <Image
-              src={values.image}
-              alt="Preview"
-              width={200}
-              height={200}
-              className="object-cover rounded-md"
-            />
-          )}
-          
-          <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          onClick={handleSubmit}
-          >
-            Upload Item       
-          </button>
-        </div>
+
+          <div className="flex justify-end mt-4">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white 
+                ${isLoading ? 'bg-purple-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'} 
+                focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200`}
+            >
+              {isLoading ? 'Uploading...' : 'Submit Item'}
+            </button>
+          </div>
+        </form>
       </div>
 
-      {/* Items List found item */}
-      <div className="bg-white p-6 rounded-lg shadow-md ">
+      {/* Items List */}
+      <div className="bg-white p-6 rounded-lg shadow-md">
         <h2 className="text-xl font-semibold mb-4">Your Posted Items</h2>
         {items.length === 0 ? (
-          <p className="text-gray-600">No items yet.</p>
+          <p className="text-gray-500 text-center py-4">No items posted yet</p>
         ) : (
-          <ul className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="space-y-4 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
             {items.map((item) => (
-              <li
-                key={item.id}
-                className="bg-gray-100 rounded-lg p-4 flex gap-4 items-start justify-center"
-                style={{
-                  border: '2px solid',
-                  borderRadius: '10px',
-                  borderColor: COLORS.gradientEnd
-                }}
-              >
-                {item.image && (
-                  <Image
-                    src={item.image}
-                    alt={item.title}
-                    width={80}
-                    height={80}
-                    className="object-cover rounded-md"
-                  />
-                )}
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    {item.title}
-                    {item.resolved && (
-                      <span className="text-sm text-green-600 flex items-center gap-1">
-                        <FaCheck /> Resolved
+              <div key={item.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium text-lg">{item.title}</h3>
+                    <p className="text-gray-600 mt-1">{item.description}</p>
+                    <div className="mt-2 space-x-2">
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs ${item.type === 'found' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                        {item.type}
                       </span>
-                    )}
-                  </h3>
-                  <p className="text-gray-600 text-sm mt-1">{item.description}</p>
-                  <p className="text-sm mt-1 flex items-center gap-2">
-                    <span className={`px-2 py-1 rounded-full text-white text-xs ${item.type === 'lost' ? 'bg-red-600' : 'bg-blue-600'}`}>{item.type}</span>
-                    {item.location && (
-                      <span className="text-gray-500 text-xs">Location: {item.location}</span>
-                    )}
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleResolve(item.id)}
-                  style={{
-                    backgroundColor: item.resolved ? COLORS.primary : COLORS.secondary,
-                    color: 'white',
-                  }}
-                  className="shrink-0 px-4 py-2 rounded-md transition-colors py-2"
-                >
-                  {item.resolved ? (
-                    <span className="flex items-center gap-2"><FaTimes /> Unresolve</span>
-                  ) : (
-                    <span className="flex items-center gap-2"><FaCheck /> Mark Resolved</span>
+                      {item.location && (
+                        <span className="inline-block px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                          {item.location}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  {item.resolved && (
+                    <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                      Resolved
+                    </span>
                   )}
-                </button>
-              </li>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>
