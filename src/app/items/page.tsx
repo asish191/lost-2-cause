@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AddItemForm from '@/components/forms/AddItemForm';
 import ItemCard from '@/components/common/ItemCard';
 import { COLORS } from '@/constants/colors';
+
+import useItemsStore from '@/zustand/stores/useItemsStorage';
 
 export default function ItemsPage() {
   const [items, setItems] = useState<Array<{
@@ -34,6 +36,14 @@ export default function ItemsPage() {
       date: '2025-06-27',
     },
   ]);
+
+  const { items: itemsStore, getItems: getItemsStore } : any = useItemsStore();
+
+  useEffect(() => {
+    getItemsStore();
+  }, []);
+
+  console.log(itemsStore);
 
   const handleAddItem = (item: any) => {
     setItems(prev => [
