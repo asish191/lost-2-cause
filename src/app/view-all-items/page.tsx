@@ -1,12 +1,16 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import debounce from 'lodash.debounce';
 import AdminSidebar from '@/components/common/AdminSidebar';
 import Sidebar from '@/components/common/Sidebar';
 import { useRouter } from "next/navigation";
 import { useAuth } from '@/contexts/AuthContext';
+import useItemsStore from '@/zustand/stores/useItemsStorage'; 
+import { Item } from '@/types/item';
 
-// Demo items (same as DashboardForm)
+// Static demo items (for reference)      
+/*
 const items = [
   {
     _id: "687e25b170618cd1087047cb",
@@ -93,24 +97,23 @@ const items = [
     imageUrl: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80" // geometry box
   }
 ];
+*/
 
-function ItemCard({ item, index, isAdmin }: { item: typeof items[number]; index: number; isAdmin: boolean }) {
-  const uploaderName = item.uploaderName || "Asish"; // Fallback for uploaderName
+function ItemCard({ item, index, isAdmin }: { item:  Item; index: number; isAdmin: boolean }) {
+  const uploaderName = item.uploaderName || "Dummy"; // Fallback for uploaderName
   const router = useRouter();
   const handleChat = (action: 'claim' | 'lost') => {
-    // Pass all item details as query params
-    const params = new URLSearchParams({
-      id: item._id,
-      name: item.itemName || '',
-      desc: item.itemDescription || '',
-      status: item.status || '',
-      floor: String(item.floor || ''),
-      uploader: item.uploaderName || '',
-      image: item.imageUrl || '',
-      action
-    });
+    const params = new URLSearchParams();
+    params.set('id', item._id || '');
+    params.set('name', item.itemName || '');
+    params.set('desc', item.itemDescription || '');
+    params.set('status', item.status || '');
+    params.set('floor', String(item.floor || ''));
+    params.set('uploader', item.uploaderName || '');
+    params.set('image', item.imageUrl || '');
+    params.set('action', action);
     router.push(`/communicationHub?${params.toString()}`);
-  };
+};
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow flex flex-col">
       {item.imageUrl && (
@@ -169,43 +172,79 @@ function ItemCard({ item, index, isAdmin }: { item: typeof items[number]; index:
 export default function AdminViewAllItemsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeMenu, setActiveMenu] = useState('viewall');
-  const router = useRouter();
-  const { user } = useAuth();
   const [showProfile, setShowProfile] = useState(true);
-
-  // Add search/filter state
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
-  const [floor, setFloor] = useState("");
-  const [filteredItems, setFilteredItems] = useState(items);
+  const [floor, setFloor] = useState("");   
+  const [filteredItems, setFilteredItems] = useState<Item[]>([]);
 
-  // Extract unique floors
-  const allFloors = Array.from(new Set(items.map(item => item.floor).filter(Boolean)));
+  const router = useRouter();
+  const { user } = useAuth(); 
+  const { 
+    items: itemsStore, 
+    getItems: getItemsStore, 
+    isLoading,
+    hasMore,
+    currentPage 
+  } = useItemsStore() as {
+    items: Item[];
+    getItems: (search?: string, page?: number) => Promise<void>;
+    isLoading: boolean;
+    hasMore: boolean;
+    currentPage: number;
+  };
 
-  // Filtering logic (copied from DashboardForm)
-  function filterItems() {
-    let filtered = items;
-    if (search.trim()) {
-      const s = search.trim().toLowerCase();
-      filtered = filtered.filter(item =>
-        (item.itemName || "").toLowerCase().includes(s) ||
-        (item.itemDescription || "").toLowerCase().includes(s)
-      );
+  // Debounce search to avoid too many API calls
+  const debouncedSearch = useCallback(
+    debounce((searchTerm: string) => {
+      getItemsStore(searchTerm, 1); // Reset to page 1 when searching
+    }, 300),
+    [getItemsStore]
+  );
+
+  // Handle search input
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchTerm = e.target.value;
+    setSearch(searchTerm);
+    debouncedSearch(searchTerm);
+  };
+
+  // Handle status and floor filters
+  useEffect(() => {
+    getItemsStore(search, 1); // Reset to page 1 when filters change
+  }, [status, floor]);
+
+  // Initial load
+  useEffect(() => {
+    getItemsStore();
+  }, [getItemsStore]);
+
+  // Load more items when scrolling to bottom
+  const handleScroll = useCallback(() => {
+    if (
+      window.innerHeight + document.documentElement.scrollTop
+      === document.documentElement.offsetHeight
+    ) {
+      if (hasMore && !isLoading) {
+        getItemsStore(search, currentPage + 1);
+      }
     }
-    if (status) {
-      filtered = filtered.filter(item => (item.status || "").toLowerCase() === status.toLowerCase());
-    }
-    if (floor) {
-      filtered = filtered.filter(item => String(item.floor) === floor);
-    }
-    setFilteredItems(filtered);
-  }
+  }, [hasMore, isLoading, currentPage, search, getItemsStore]);
 
   useEffect(() => {
-    filterItems();
-    // eslint-disable-next-line
-  }, [search, status, floor]);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
+
+
+
+  // Extract unique floors from itemsStore
+  const allFloors = useMemo<number[]>(() => {
+    return Array.from(new Set((itemsStore || []).map((item: Item) => item.floor).filter(Boolean))).sort() as number[];
+  }, [itemsStore]);
+
+  // Effect for scroll handling
   useEffect(() => {
     const handleScroll = () => {
       setShowProfile(window.scrollY === 0);
@@ -214,6 +253,7 @@ export default function AdminViewAllItemsPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  
   const handleLogout = () => {
     router.push("/");
   };
@@ -259,7 +299,7 @@ export default function AdminViewAllItemsPage() {
           <h1 className="text-3xl font-bold text-[#03045e] mb-4">View All Items</h1>
           <p className="text-[#03045e]">Manage and view all items in the system</p>
         </div>
-        {/* Filter and Search Section (now functional) */}
+        {/* Filter and Search Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex flex-wrap gap-4 items-center">
             <div className="flex-1 min-w-[200px]">
@@ -267,7 +307,7 @@ export default function AdminViewAllItemsPage() {
                 type="text"
                 placeholder="Search items..."
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={handleSearchChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -287,23 +327,31 @@ export default function AdminViewAllItemsPage() {
               onChange={e => setFloor(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="">All Floors</option>
-              {allFloors.map(f => (
-                <option key={f} value={f}>{f}</option>
+              <option value="">Location</option>
+              {allFloors.map((f: number) => (
+                <option key={String(f)} value={String(f)}>{f}</option>
               ))}
             </select>
           </div>
         </div>
+
         {/* Items Grid Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {filteredItems.map((item, idx) => (
+          {(itemsStore || []).map((item: Item, idx: number) => (
             <ItemCard key={item._id} item={item} index={idx} isAdmin={!!user?.isAdmin} />
           ))}
-          {filteredItems.length === 0 && (
-            <div className="text-gray-500 text-center py-8 col-span-full">No items found.</div>
+          {(itemsStore || []).length === 0 && (
+            <div className="text-gray-500 text-center py-8 col-span-full">
+              {isLoading ? "Loading items..." : "No items found matching your filters."}
+            </div>
+          )}
+          {isLoading && itemsStore?.length > 0 && (
+            <div className="col-span-full text-center py-4">
+              <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-blue-500 border-t-transparent"></div>
+            </div>
           )}
         </div>
       </main>
     </div>
   );
-} 
+}
