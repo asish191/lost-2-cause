@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { COLORS } from '@/constants/colors';
 import AdminSidebar from '@/components/common/AdminSidebar';
+import Sidebar from '@/components/common/Sidebar';
 import { useRouter } from "next/navigation";
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -94,10 +94,8 @@ const items = [
   }
 ];
 
-const fallbackUploaderNames = ["Asish", "Manthan", "Prajwal", "Umair", "Prasanth", "Talha"];
-
-function ItemCard({ item, index }: { item: typeof items[number]; index: number }) {
-  const uploaderName = item.uploaderName || fallbackUploaderNames[index % fallbackUploaderNames.length];
+function ItemCard({ item, index, isAdmin }: { item: typeof items[number]; index: number; isAdmin: boolean }) {
+  const uploaderName = item.uploaderName || "Asish"; // Fallback for uploaderName
   const router = useRouter();
   const handleChat = (action: 'claim' | 'lost') => {
     // Pass all item details as query params
@@ -148,13 +146,16 @@ function ItemCard({ item, index }: { item: typeof items[number]; index: number }
             <button
               className="px-4 py-2 rounded-md text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition-colors w-full"
               onClick={() => handleChat('claim')}
+              disabled={false}
             >
               Claim
             </button>
           ) : item.status === 'lost' ? (
             <button
-              className="px-4 py-2 rounded-md text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 transition-colors w-full"
-              onClick={() => handleChat('lost')}
+              className={`px-4 py-2 rounded-md text-sm font-medium text-white bg-yellow-600 transition-colors w-full ${!isAdmin ? 'opacity-60 cursor-not-allowed' : 'hover:bg-yellow-700'}`}
+              onClick={isAdmin ? () => handleChat('lost') : undefined}
+              disabled={!isAdmin}
+              title={!isAdmin ? 'Only admins can use this action' : ''}
             >
               Lost
             </button>
@@ -221,13 +222,22 @@ export default function AdminViewAllItemsPage() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Admin Sidebar */}
-      <AdminSidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activeMenu={activeMenu}
-        setActiveMenu={setActiveMenu}
-      />
+      {/* Sidebar: Admin for admin, normal for user */}
+      {user?.isAdmin ? (
+        <AdminSidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
+        />
+      ) : (
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
+        />
+      )}
       {/* Main Content */}
       <main className={`flex-1 p-8 bg-gray-100 min-h-screen relative ${sidebarOpen ? "ml-64" : "ml-20"} transition-all duration-300`}>
         {/* User Button */}
@@ -246,8 +256,8 @@ export default function AdminViewAllItemsPage() {
           </div>
         )}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-4">View All Items</h1>
-          <p className="text-gray-600">Manage and view all items in the system</p>
+          <h1 className="text-3xl font-bold text-[#03045e] mb-4">View All Items</h1>
+          <p className="text-[#03045e]">Manage and view all items in the system</p>
         </div>
         {/* Filter and Search Section (now functional) */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -287,7 +297,7 @@ export default function AdminViewAllItemsPage() {
         {/* Items Grid Section */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {filteredItems.map((item, idx) => (
-            <ItemCard key={item._id} item={item} index={idx} />
+            <ItemCard key={item._id} item={item} index={idx} isAdmin={!!user?.isAdmin} />
           ))}
           {filteredItems.length === 0 && (
             <div className="text-gray-500 text-center py-8 col-span-full">No items found.</div>

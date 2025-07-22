@@ -2,15 +2,17 @@
 
 import { useState, useEffect } from "react";
 import Sidebar from "@/features/layout/components/Sidebar";
+import AdminSidebar from "@/components/common/AdminSidebar";
 import ItemManagementForm from "@/features/items/components/ItemManagementForm";
 import { useRouter } from "next/navigation";
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function ItemManagementPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [activeMenu, setActiveMenu] = useState("item");
-  const router = useRouter();
   const { user } = useAuth();
+  // Set activeMenu based on user role
+  const [activeMenu, setActiveMenu] = useState(user?.isAdmin ? "upload" : "item");
+  const router = useRouter();
   const [showProfile, setShowProfile] = useState(true);
 
   useEffect(() => {
@@ -21,21 +23,36 @@ export default function ItemManagementPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    setActiveMenu(user?.isAdmin ? "upload" : "item");
+  }, [user]);
+
   const handleLogout = () => router.push("/");
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <Sidebar
-        sidebarOpen={sidebarOpen}
-        setSidebarOpen={setSidebarOpen}
-        activeMenu={activeMenu}
-        setActiveMenu={setActiveMenu}
-      />
+      {user?.isAdmin ? (
+        <AdminSidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
+        />
+      ) : (
+        <Sidebar
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+          activeMenu={activeMenu}
+          setActiveMenu={setActiveMenu}
+        />
+      )}
       <main
         className={`flex-1 p-8 bg-gray-100 min-h-screen relative ${
           sidebarOpen ? "ml-64" : "ml-20"
         } transition-all duration-300`}
       >
+        <h1 className="text-3xl font-bold mb-8 text-[#03045e]">Report for Lost Items or Found Items</h1>
+        <div className="h-4" />
         {showProfile && (
           <div className="fixed right-8 top-8 z-10">
             <button className="flex items-center gap-3 bg-white border border-gray-200 shadow-lg px-4 py-2 rounded-full font-medium text-gray-800 hover:bg-gray-50 transition min-w-[140px]">

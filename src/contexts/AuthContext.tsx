@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (userData.isAdmin) {
         router.push('/admin-dashboard');
       } else {
-        router.push('/dashboard');
+        router.push('/view-all-items');
       }
     } catch (error) {
       console.error('Login error:', error);

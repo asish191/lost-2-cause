@@ -49,15 +49,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
       <nav className="flex-1 flex flex-col gap-2 mt-4">
+        {/* Replace Main Dashboard with View All Items */}
         <Link
-          href="/dashboard"
-          onClick={() => setActiveMenu('dashboard')}
-          className={`flex items-center gap-4 px-4 py-3 text-white rounded-lg transition-colors transition-transform duration-200 hover:scale-105 focus:scale-105 relative
-            ${activeMenu === 'dashboard' ? 'bg-blue-700 shadow-lg ring-2 ring-indigo-400/60 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-cyan-400 before:rounded-l-lg' : 'hover:bg-blue-700'}`}
+          href="/view-all-items"
+          onClick={() => setActiveMenu('viewall')}
+          className={`flex items-center gap-4 px-4 py-3 text-white rounded-lg transition-colors transition-transform duration-200 hover:scale-105 focus:scale-105 relative w-full text-left
+            ${activeMenu === 'viewall' ? 'bg-blue-700 shadow-lg ring-2 ring-indigo-400/60 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-cyan-400 before:rounded-l-lg' : 'hover:bg-blue-700'}`}
           style={{ position: 'relative' }}
         >
-          <FaHome className="text-xl" />
-          <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>Main Dashboard</span>
+          <FaListAlt className="text-xl" />
+          <span className={`transition-all duration-300 ${sidebarOpen ? "block" : "hidden"}`}>View All Items</span>
         </Link>
         <Link
           href="/itemManagement"

@@ -87,7 +87,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
         {itemMgmtOpen && sidebarOpen && (
           <div className="flex flex-col gap-1 ml-10">
             <Link
-              href="/admin-item-management"
+              href="/itemManagement"
               onClick={() => setActiveMenu('upload')}
               className={`flex items-center gap-3 px-2 py-2 text-white rounded-md transition-colors transition-transform duration-200 hover:scale-105 focus:scale-105 text-sm relative
                 ${activeMenu === 'upload' ? 'bg-blue-600 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-cyan-400 before:rounded-l-md' : 'hover:bg-blue-600'}`}
@@ -97,7 +97,7 @@ const AdminSidebar: React.FC<SidebarProps> = ({
               Add Items
             </Link>
             <Link
-              href="/admin-view-all-items"
+              href="/view-all-items"
               onClick={() => setActiveMenu('viewall')}
               className={`flex items-center gap-3 px-2 py-2 text-white rounded-md transition-colors transition-transform duration-200 hover:scale-105 focus:scale-105 text-sm relative
                 ${activeMenu === 'viewall' ? 'bg-blue-600 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-1 before:bg-cyan-400 before:rounded-l-md' : 'hover:bg-blue-600'}`}
