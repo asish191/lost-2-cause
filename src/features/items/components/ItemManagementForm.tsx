@@ -34,23 +34,38 @@ export default function ItemManagementForm({ initialItems = [] }: ItemManagement
       // Create FormData for upload
       const formData = new FormData();
       
+      // Check if user is logged in first
+      if (!user?.id) {
+        toast.error('You must be logged in to upload items');
+        return;
+      }
+      
       // Required fields with defaults
       formData.append('itemName', values.title);
       formData.append('itemDescription', values.description);
       formData.append('status', values.type); // 'found' or 'lost'
-      formData.append('floor', String(Math.floor(Math.random() * 5) + 1)); // Random floor between 1-5
-      formData.append('uploaderName', user ? `${user.firstName} ${user.lastName}` : 'Anonymous');
-      if (user?.id) {
-        formData.append('userId', user.id);
-      }
+      formData.append('floor', values.location); // location as floor
+      formData.append('uploaderId', user.id); // userID as uploaderId
+      formData.append('uploaderName', `${user.firstName} ${user.lastName}`); // user name as uploaderName
+      
       
       // Optional fields
       if (values.image) {
         formData.append('image', values.image);
+        console.log('🖼️ [ItemUpload] Image attached:', {
+          name: (values.image as File).name,
+          size: (values.image as File).size,
+          type: (values.image as File).type
+        });
+      } else {
+        console.log('📷 [ItemUpload] No image attached');
       }
 
-      await uploadItem(formData);
+      console.log('⬆️ [ItemUpload] Calling uploadItem API...');
+      const result = await uploadItem(formData);
+      console.log('✅ [ItemUpload] Upload successful:', result);
       
+      console.log('🎉 [ItemUpload] Showing success toast');
       toast.success('Item uploaded successfully!');
       
       // Add the new item to local state
@@ -63,14 +78,21 @@ export default function ItemManagementForm({ initialItems = [] }: ItemManagement
         image: values.image,
         resolved: false,
       };
+      console.log('📝 [ItemUpload] Adding item to local state:', newItem);
       setItems([...items, newItem]);
 
-      toast.success('Item uploaded successfully!');
+      console.log('🔄 [ItemUpload] Resetting form');
       reset();
     } catch (error) {
-      console.error('Error:', error);
+      console.error('❌ [ItemUpload] Upload failed:', error);
+      console.error('❌ [ItemUpload] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
       toast.error('Failed to upload item. Please try again.');
     }
+    
+    console.log('🏁 [ItemUpload] Form submission completed');
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {

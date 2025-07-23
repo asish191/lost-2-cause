@@ -4,12 +4,14 @@ export default function LoginPage() {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Left section with logo and background */}
-      <div className="w-1/2 bg-gray-100 flex items-center justify-center">
+      <div className="w-1/2 bg-white flex items-center justify-center">
         {/* Image with responsive sizing */}
         <img
           src="/lost-image.png"
           alt="Illustration"
           className="max-w-full max-h-full object-contain p-4"
+          width={500}
+          height={500}
         />
       </div>
 

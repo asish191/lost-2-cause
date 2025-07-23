@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       setUser({
-        id: userData.userID,
+        id: userData.email,
         firstName: userData.name?.split(' ')[0] || '',
         lastName: userData.name?.split(' ')[1] || '',
         email: userData.email,
@@ -122,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.statusCode === 201) {
         setUser({
-          id: data.body.user.user.email,
+          id: data.body.user._id,
           firstName: userData.first_name,
           lastName: userData.last_name,
           email: userData.email,

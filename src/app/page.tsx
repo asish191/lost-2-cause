@@ -170,7 +170,7 @@ export default function Home() {
               <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-indigo-500/20 rounded-2xl transform rotate-3"></div>
               <div className="relative">
                 <Image
-                  src="/Home-fg.png"
+                  src="/lost2Cause_logo.png"
                   alt="Lost and Found Illustration"
                   width={500}
                   height={500}

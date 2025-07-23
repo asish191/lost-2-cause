@@ -141,7 +141,7 @@ function ItemCard({ item, index, isAdmin }: { item:  Item; index: number; isAdmi
         <p className="text-gray-600 text-xs mb-1">Uploaded by: <span className="font-medium text-gray-800">{uploaderName}</span></p>
         <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.itemDescription || "No description provided."}</p>
         <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-2">
-          {item.floor && <span className="bg-blue-50 px-2 py-1 rounded">Floor: {item.floor}</span>}
+          {item.floor && <span className="bg-blue-50 px-2 py-1 rounded">Location: {item.floor}</span>}
           {item.uploadedAt && <span className="bg-gray-50 px-2 py-1 rounded">{new Date(item.uploadedAt).toLocaleDateString()}</span>}
         </div>
         <div className="mt-auto flex gap-2">
@@ -177,6 +177,7 @@ export default function AdminViewAllItemsPage() {
   const [status, setStatus] = useState("");
   const [floor, setFloor] = useState("");   
   const [filteredItems, setFilteredItems] = useState<Item[]>([]);
+  const [mounted, setMounted] = useState(false);
 
   const router = useRouter();
   const { user } = useAuth(); 
@@ -244,6 +245,11 @@ export default function AdminViewAllItemsPage() {
     return Array.from(new Set((itemsStore || []).map((item: Item) => item.floor).filter(Boolean))).sort() as number[];
   }, [itemsStore]);
 
+  // Effect for client-side mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Effect for scroll handling
   useEffect(() => {
     const handleScroll = () => {
@@ -291,7 +297,7 @@ export default function AdminViewAllItemsPage() {
                   {user?.firstName?.[0] || 'A'}{user?.lastName?.[0] || ''}
                 </span>
               )}
-              <span className="ml-1 font-semibold text-base truncate max-w-[90px]">{user ? `${user.firstName} ${user.lastName}` : 'Admin'}</span>
+              <span className="ml-1 font-semibold text-base truncate max-w-[90px]">{mounted && user ? `${user.firstName} ${user.lastName}` : 'Admin'}</span>
             </button>
           </div>
         )}
@@ -328,8 +334,8 @@ export default function AdminViewAllItemsPage() {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Location</option>
-              {allFloors.map((f: number) => (
-                <option key={String(f)} value={String(f)}>{f}</option>
+              {allFloors.map((f: number, index: number) => (
+                <option key={`floor-${index}-${f}`} value={String(f)}>{f}</option>
               ))}
             </select>
           </div>

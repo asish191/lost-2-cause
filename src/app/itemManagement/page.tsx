@@ -8,6 +8,11 @@ import { useRouter } from "next/navigation";
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function ItemManagementPage() {
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { user } = useAuth();
   // Set activeMenu based on user role
@@ -63,7 +68,7 @@ export default function ItemManagementPage() {
                   {user?.firstName?.[0] || 'U'}{user?.lastName?.[0] || ''}
                 </span>
               )}
-              <span className="ml-1 font-semibold text-base truncate max-w-[90px]">{user ? `${user.firstName} ${user.lastName}` : 'User'}</span>
+              <span className="ml-1 font-semibold text-base truncate max-w-[90px]">{isClient && user ? `${user.firstName} ${user.lastName}` : 'User'}</span>
             </button>
           </div>
         )}

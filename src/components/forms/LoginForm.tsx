@@ -37,7 +37,7 @@ export default function LoginForm() {
     <div className="space-y-6">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="block text font-medium text-gray-700">
             Email Address
           </label>
           <input
@@ -46,12 +46,12 @@ export default function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            placeholder="you@student.epita.fr"
+            placeholder="Email"
             className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500"
           />
         </div>
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="password" className="block text font-medium text-gray-700">
             Password
           </label>
           <input
@@ -60,6 +60,7 @@ export default function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            placeholder="Password"
             className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-cyan-500 focus:border-cyan-500"
           />
         </div>
