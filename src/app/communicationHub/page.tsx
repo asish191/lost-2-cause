@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AdminSidebar from "@/components/common/AdminSidebar";
 import Sidebar from "@/components/common/Sidebar";
+import useChatStorage from '@/zustand/stores/useChatStorage';
 import CommunicationHubForm from "@/components/forms/CommunicationHubForm";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -62,10 +63,98 @@ export default function CommunicationHubPage() {
     image: searchParams?.get('image'),
   };
   const { user: currentUser } = useAuth();
+  
+  // Access conversation data from Zustand store
+  const { 
+    conversations: apiConversations, 
+    isLoading: isLoadingConversations, 
+    error: conversationError,
+    getConversations
+  } = useChatStorage();
 
   const isAdmin = currentUser?.isAdmin;
 
-  const usersForChat = isAdmin ? [...mockUsers] : [...mockUsers].filter(u => u.isAdmin);
+  // Fetch conversations when component mounts
+  useEffect(() => {
+    if (currentUser?.email) {
+      console.log('🚀 [CommunicationHub] Fetching conversations for user:', currentUser.email);
+      getConversations();
+    }
+  }, [currentUser?.email, getConversations]);
+
+  // Log conversation data when it changes
+  useEffect(() => {
+    if (apiConversations.length > 0) {
+      console.log(' [CommunicationHub] API Conversations available:', apiConversations);
+      console.log(' [CommunicationHub] Total conversations:', apiConversations.length);
+    }
+    if (conversationError) {
+      console.error(' [CommunicationHub] Conversation error:', conversationError);
+    }
+  }, [apiConversations, conversationError]);
+
+  // Extract participants from API conversations
+  const participantsFromConversations = useMemo(() => {
+    if (apiConversations.length === 0) {
+      return [...mockUsers];
+    }
+
+    console.log('🔍 [CommunicationHub] Processing conversations:', apiConversations);
+    console.log('🔍 [CommunicationHub] Current user email:', currentUser?.email);
+
+    const uniqueParticipants = new Set<string>();
+    
+    // Process each conversation to extract other participants (excluding current user)
+    apiConversations.forEach(conversation => {
+      conversation.participants.forEach((participant: any) => {
+        // Skip if this participant is the current user (same email)
+        if (participant?.email === currentUser?.email) {
+          console.log('❌ [CommunicationHub] Excluding current user:', participant?.name, `(${participant?.email})`);
+          return;
+        }
+
+        // Add other participants to the set
+        if (participant?._id && participant?.email) {
+          console.log('✅ [CommunicationHub] Adding participant:', participant?.name, `(${participant?.email})`);
+          uniqueParticipants.add(JSON.stringify(participant));
+        }
+      });
+    });
+
+    // Convert participant objects to user objects for UI
+    const participantUsers = Array.from(uniqueParticipants).map(participantString => {
+      const participant = JSON.parse(participantString);
+      
+      // Compare current user email with participant email
+      const isCurrentUser = participant.email === currentUser?.email;
+      
+      console.log(`🔍 [CommunicationHub] Participant: ${participant.name} (${participant.email})`);
+      console.log(`🔍 [CommunicationHub] Current user email: ${currentUser?.email}`);
+      console.log(`🔍 [CommunicationHub] Is current user: ${isCurrentUser}`);
+      
+      return {
+        id: participant._id,
+        name: participant.name,
+        email: participant.email,
+        avatar: undefined,
+        status: isCurrentUser ? 'online' as const : 'online' as const,
+        lastSeen: isCurrentUser ? 'You' : 'Just now',
+        unreadCount: 0,
+        isBlocked: false,
+        isMuted: false,
+        isAdmin: participant.isAdmin || false,
+        isCurrentUser: isCurrentUser, 
+      };
+    });
+
+    console.log('🔍 [CommunicationHub] Final participants:', participantUsers.length, 'users');
+
+    return participantUsers;
+  }, [apiConversations, currentUser?.email]);
+
+  const usersForChat = participantsFromConversations;
+
+  
 
   return (
     <div className="flex h-screen bg-gray-100">

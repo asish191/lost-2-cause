@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { availableReactions, userColors } from '@/constants/communication';
 import { handleReaction as handleReactionUtil, simulateAdminResponse as simulateAdminResponseUtil, Message, Reaction } from '@/utils/communication';
 import { useAuth } from '@/contexts/AuthContext';
+import useChatStorage from '@/zustand/stores/useChatStorage';
 
 interface Attachment {
   type: 'image';
@@ -302,19 +303,21 @@ const DEMO_USERS: User[] = [
 
 export default function CommunicationHubForm({ item, users }: CommunicationHubProps) {
   const { user: currentUser } = useAuth();
+  
+  // Chat storage hook
+  const { 
+    conversations: apiConversations, 
+    getConversations, 
+    isLoading: isLoadingConversations, 
+    error: conversationError 
+  } = useChatStorage();
+  
   // Use item directly as itemDetails
   const itemDetails = item;
-  // Use useMemo to ensure stable reference for users
+  // Use all users as processed by the main page (no additional filtering)
   const sidebarUsers = useMemo(() => {
-    if (!currentUser) return [];
-    if (currentUser.isAdmin) {
-      // Admin: show all users except self
-      return users.filter(u => u.id !== currentUser.id);
-    } else {
-      // Normal user: show only admin(s)
-      return users.filter(u => u.isAdmin);
-    }
-  }, [users, currentUser]);
+    return users; // Show all participants as processed by the main page
+  }, [users]);
 
   // Conversations state
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -372,6 +375,30 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
       setSelectedUserId(users[0].id);
     }
   }, [users]); // Removed selectedUserId from dependencies
+
+  // Fetch conversations from API on component mount
+  useEffect(() => {
+    const fetchConversations = async () => {
+      try {
+        console.log('🔄 Fetching conversations from API...');
+        await getConversations();
+        console.log('✅ Conversations fetched successfully:', apiConversations);
+      } catch (error) {
+        console.error('❌ Failed to fetch conversations:', error);
+      }
+    };
+
+    if (currentUser) {
+      fetchConversations();
+    }
+  }, [currentUser, getConversations]);
+
+  // Log API conversations when they change
+  useEffect(() => {
+    if (apiConversations.length > 0) {
+      console.log('📋 API Conversations updated:', apiConversations);
+    }
+  }, [apiConversations]);
 
   // Update messages when selected user changes
   useEffect(() => {

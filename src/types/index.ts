@@ -1,6 +1,7 @@
 // User Types
 export interface User {
   id: string;
+  userID?: string; // MongoDB _id for consistent participant filtering
   firstName: string;
   lastName: string;
   email: string;

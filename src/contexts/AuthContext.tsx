@@ -37,6 +37,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isAuthenticated = !!user;
 
   // Load user data on mount
+  // TODO: Uncomment when /user/profile endpoint is implemented on backend
+  /*
   useEffect(() => {
     const loadUserData = async () => {
       if (user?.token) {
@@ -65,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     loadUserData();
   }, []);
+  */
 
   const login = async (email: string, password: string) => {
     try {
@@ -74,11 +77,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      if (!response.ok) throw new Error('Login failed');
-
       const data = await response.json();
+      console.log('🔍 Login Response Status:', response.status);
+      console.log('🔍 Login Response Data:', data);
+
+      if (!response.ok) {
+        const errorMessage = data.message || data.error || `HTTP ${response.status}: Login failed`;
+        console.error('❌ Login Error:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      // Check if the response has the expected structure
+      if (!data.body || !data.body.user) {
+        console.error('❌ Login Error: Invalid response structure', data);
+        throw new Error('User not found or invalid login response');
+      }
+
       console.log('LOGIN RESPONSE USER:', data.body.user); // Debug log
-      const userData = data.body.user.user; // Fix: go one level deeper
+      const userData = data.body.user.user || data.body.user; // Handle both nested and direct user object
+
+      // Validate that userData has required fields
+      if (!userData || !userData.token) {
+        console.error('❌ Login Error: Missing required user data or token', userData);
+        throw new Error('Invalid user data: missing authentication token');
+      }
 
       // Store token securely in cookies
       Cookies.set('auth_token', userData.token, { 
@@ -88,7 +110,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       setUser({
-        id: userData.email,
+        id: userData._id || userData.email, // Use actual _id from API, fallback to email
+        userID: userData._id, // Store the actual MongoDB _id
         firstName: userData.name?.split(' ')[0] || '',
         lastName: userData.name?.split(' ')[1] || '',
         email: userData.email,
