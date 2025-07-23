@@ -15,7 +15,7 @@ export interface Message {
   senderRole: 'admin' | 'user' | 'system';
   conversationId: string;
   attachment?: { type: 'image'; url: string };
-  status?: 'sent' | 'delivered' | 'read';
+  status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
   reactions?: Reaction[];
 }
 

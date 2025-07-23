@@ -23,6 +23,8 @@ interface ChatState {
   setConversations: (conversations: Conversation[]) => void;
   getConversations: () => Promise<void>;
   createConversation: (participantId: string) => Promise<Conversation>;
+  sendMessage: (conversationId: string, content: string, messageType?: string) => Promise<any>;
+  getMessages: (conversationId: string) => Promise<any>;
   resolveConversation: (conversationId: string) => Promise<any>;
   reset: () => void;
 }
@@ -121,6 +123,108 @@ const useChatStorage = create<ChatState>()(
           } catch (err: any) {
             console.error('Error creating conversation:', err);
             set({ error: err.message || 'Failed to create conversation' });
+            throw err;
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+
+        // Send Message to Conversation
+        sendMessage: async (conversationId: string, content: string, messageType: string = 'text') => {
+          set({ isLoading: true, error: null });
+          try {
+            const token = Cookies.get('auth_token');
+            if (!token) {
+              throw new Error('No authentication token found');
+            }
+
+            const apiUrl = `${API_BASE_URL}/conversations/${conversationId}/messages`;
+            console.log('🔍 [Debug] Sending message to URL:', apiUrl);
+            console.log('🔍 [Debug] Request body:', { content, messageType });
+            
+            const response = await fetch(apiUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ 
+                content, 
+                messageType 
+              }),
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.statusCode === 201 || data.statusCode === 200) {
+              // Optionally update the conversation's latest message
+              const message = data.body?.message;
+              if (message) {
+                set((state) => ({
+                  conversations: state.conversations.map(conv => 
+                    conv._id === conversationId 
+                      ? { ...conv, latestMessage: content }
+                      : conv
+                  )
+                }));
+              }
+              return data.body;
+            } else {
+              throw new Error(data.message || 'Failed to send message');
+            }
+          } catch (err: any) {
+            console.error('❌ [Debug] Error sending message:', err);
+            console.error('❌ [Debug] Error name:', err.name);
+            console.error('❌ [Debug] Error message:', err.message);
+            console.error('❌ [Debug] Error stack:', err.stack);
+            
+            if (err.name === 'TypeError' && err.message.includes('fetch')) {
+              console.error('❌ [Debug] Network error - check if backend is running on port 3001');
+            }
+            
+            set({ error: err.message || 'Failed to send message' });
+            throw err;
+          } finally {
+            set({ isLoading: false });
+          }
+        },
+
+        // Get Messages from Conversation
+        getMessages: async (conversationId: string) => {
+          set({ isLoading: true, error: null });
+          try {
+            const token = Cookies.get('auth_token');
+            if (!token) {
+              throw new Error('No authentication token found');
+            }
+
+            const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}`, {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+              },
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            if (data.statusCode === 200) {
+              // Return the conversation data with messages
+              return data.body;
+            } else {
+              throw new Error(data.message || 'Failed to get messages');
+            }
+          } catch (err: any) {
+            console.error('Error getting messages:', err);
+            set({ error: err.message || 'Failed to get messages' });
             throw err;
           } finally {
             set({ isLoading: false });

@@ -7,6 +7,7 @@ import { availableReactions, userColors } from '@/constants/communication';
 import { handleReaction as handleReactionUtil, simulateAdminResponse as simulateAdminResponseUtil, Message, Reaction } from '@/utils/communication';
 import { useAuth } from '@/contexts/AuthContext';
 import useChatStorage from '@/zustand/stores/useChatStorage';
+import useItemsStore from '@/zustand/stores/useItemsStorage';
 
 interface Attachment {
   type: 'image';
@@ -308,9 +309,14 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
   const { 
     conversations: apiConversations, 
     getConversations, 
+    sendMessage,
+    getMessages,
     isLoading: isLoadingConversations, 
     error: conversationError 
   } = useChatStorage();
+  
+  // Items storage hook for image uploads
+  const uploadItem = useItemsStore((state: any) => state.uploadItem);
   
   // Use item directly as itemDetails
   const itemDetails = item;
@@ -399,6 +405,53 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
       console.log('📋 API Conversations updated:', apiConversations);
     }
   }, [apiConversations]);
+
+  // Load messages when user is selected
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (!selectedUserId) {
+        setMessages([]);
+        return;
+      }
+
+      // Find the real conversation ID from API conversations
+      const realConversationId = findConversationId(selectedUserId);
+      if (!realConversationId) {
+        console.error('❌ Could not find conversation ID for loading messages:', selectedUserId);
+        setMessages([]);
+        return;
+      }
+
+      try {
+        console.log('📥 Loading messages for conversation:', realConversationId);
+        const conversationData = await getMessages(realConversationId);
+        
+        if (conversationData && conversationData.messages) {
+          console.log('✅ Loaded messages:', conversationData.messages.length);
+          setMessages(conversationData.messages);
+        } else {
+          console.log('ℹ️ No messages found in conversation');
+          setMessages([]);
+        }
+        
+        // Mark messages as read in local state
+        const conversation = conversations.find(conv => conv.userId === selectedUserId);
+        if (conversation && conversation.unreadCount > 0) {
+          setConversations(prev => prev.map(conv => 
+            conv.userId === selectedUserId 
+              ? { ...conv, unreadCount: 0 }
+              : conv
+          ));
+        }
+        
+      } catch (error) {
+        console.error('❌ Failed to load messages:', error);
+        setMessages([]);
+      }
+    };
+
+    loadMessages();
+  }, [selectedUserId, apiConversations, getMessages]); // Use apiConversations instead of mock conversations
 
   // Update messages when selected user changes
   useEffect(() => {
@@ -512,51 +565,166 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
     setShowUserDropdown(false);
   };
 
+  // Helper function to find real conversation ID from API conversations
+  const findConversationId = (userId: string): string | null => {
+    if (!apiConversations || apiConversations.length === 0) {
+      return null;
+    }
+    
+    // Find conversation where the selected user is a participant
+    const conversation = apiConversations.find(conv => 
+      conv.participants.some((participant: any) => 
+        participant._id === userId || participant.id === userId
+      )
+    );
+    
+    return conversation?._id || null;
+  };
+
   // Handle sending a new message or image attachment
-  const handleSendMessage = (content?: string, attachment?: Attachment) => {
+  const handleSendMessage = async (content?: string, attachment?: Attachment) => {
     const messageContent = content || newMessage;
-    if (messageContent.trim() || attachment) {
-      const messageId = Date.now().toString();
-      const message: Message = {
+    if (!messageContent.trim() && !attachment) {
+      return;
+    }
+
+    if (!selectedUserId) {
+      console.error('No user selected for messaging');
+      return;
+    }
+
+    // Find the real conversation ID from API conversations
+    const realConversationId = findConversationId(selectedUserId);
+    console.log('🔍 [Debug] Selected user ID:', selectedUserId);
+    console.log('🔍 [Debug] Found conversation ID:', realConversationId);
+    console.log('🔍 [Debug] Available conversations:', apiConversations);
+    
+    if (!realConversationId) {
+      console.error('❌ Could not find conversation ID for user:', selectedUserId);
+      console.error('❌ Available conversations:', apiConversations?.map(c => ({ id: c._id, participants: c.participants })));
+      return;
+    }
+
+    // Create message ID outside try block for error handling
+    const messageId = Date.now().toString();
+    
+    try {
+      // Create optimistic message for immediate UI update
+      const optimisticMessage: Message = {
         id: messageId,
-        sender: 'Admin',
+        sender: currentUser?.firstName || 'You',
         content: messageContent,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         senderRole: 'admin',
-        conversationId: selectedUserId ? `conv-${selectedUserId}` : 'default',
+        conversationId: realConversationId,
         attachment,
-        status: 'sent'
+        status: 'sending' // Show as sending initially
       };
       
-      // Update messages for current conversation
-      setMessages(prev => [...prev, message]);
+      // Update messages for immediate UI feedback
+      setMessages(prev => [...prev, optimisticMessage]);
       
-      // Update conversation
+      // Send message via API
+      console.log('🚀 Sending message to conversation:', realConversationId);
+      const response = await sendMessage(realConversationId, messageContent, attachment ? 'image' : 'text');
+      
+      // Update message status to sent
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, status: 'sent' }
+          : msg
+      ));
+      
+      // Update local conversation state
       if (selectedUserId) {
         setConversations(prev => prev.map(conv => 
           conv.userId === selectedUserId 
             ? {
                 ...conv,
-                messages: [...conv.messages, message],
+                messages: [...conv.messages.filter(m => m.id !== messageId), { ...optimisticMessage, status: 'sent' }],
                 lastMessage: messageContent,
-                lastMessageTime: message.timestamp,
+                lastMessageTime: optimisticMessage.timestamp,
               }
             : conv
         ));
       }
       
-      if (!content) {
-        setNewMessage('');
-      }
+      console.log('✅ Message sent successfully:', response);
+      
+    } catch (error) {
+      console.error('❌ Failed to send message:', error);
+      
+      // Update message status to failed
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, status: 'failed' }
+          : msg
+      ));
+      
+      // Optionally show error to user
+      alert('Failed to send message. Please try again.');
+    }
+    
+    // Clear input if not a content parameter (user typed message)
+    if (!content) {
+      setNewMessage('');
     }
   };
 
+  // Helper function to convert file to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
+
   // Handle file input change for image attachments
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      const imageUrl = URL.createObjectURL(file);
-      handleSendMessage(`Image: ${file.name}`, { type: 'image', url: imageUrl });
+      let base64DataUrl: string;
+      
+      try {
+        console.log('📷 Converting image to base64:', file.name);
+        
+        // Convert file to base64 data URL
+        base64DataUrl = await fileToBase64(file);
+        console.log('✅ Image converted to base64');
+        
+      } catch (error) {
+        console.error('❌ Failed to convert image to base64:', error);
+        alert('Failed to process image. Please try again.');
+        return;
+      }
+      
+      // Check if user is selected
+      if (!selectedUserId) {
+        console.error('❌ No user selected for image message');
+        alert('Please select a user to send image to.');
+        return;
+      }
+
+      // Find the real conversation ID from API conversations
+      const realConversationId = findConversationId(selectedUserId);
+      if (!realConversationId) {
+        console.error('❌ Could not find conversation ID for image message:', selectedUserId);
+        alert('Could not send image. Please try again.');
+        return;
+      }
+
+      try {
+        // Send message with base64 data as content and messageType: "image"
+        console.log('🚀 Sending base64 image message to conversation:', realConversationId);
+        await sendMessage(realConversationId, base64DataUrl, 'image');
+        console.log('✅ Base64 image message sent successfully');
+        
+      } catch (error) {
+        console.error('❌ Failed to send image message:', error);
+        alert('Failed to send image message. Please check your connection and try again.');
+      }
     }
     // Reset file input
     if (e.target) e.target.value = '';

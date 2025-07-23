@@ -99,8 +99,6 @@ export default function CommunicationHubPage() {
       return [...mockUsers];
     }
 
-    console.log('🔍 [CommunicationHub] Processing conversations:', apiConversations);
-    console.log('🔍 [CommunicationHub] Current user email:', currentUser?.email);
 
     const uniqueParticipants = new Set<string>();
     
