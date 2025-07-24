@@ -46,11 +46,10 @@ interface CommunicationHubProps {
     floor?: string | null;
     uploader?: string | null;
     image?: string | null;
+    uploaderId?: string | null;
   };
   users: User[];
 }
-
-
 
 // UserList subcomponent
 function UserList({ 
@@ -309,11 +308,17 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
   const { 
     conversations: apiConversations, 
     getConversations, 
+    createConversation,
     sendMessage,
     getMessages,
     isLoading: isLoadingConversations, 
     error: conversationError 
   } = useChatStorage();
+
+  // Log conversation count
+  useEffect(() => {
+    console.log('Total conversations:', apiConversations?.length || 0);
+  }, [apiConversations]);
   
   // Items storage hook for image uploads
   const uploadItem = useItemsStore((state: any) => state.uploadItem);
@@ -406,6 +411,26 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
     }
   }, [apiConversations]);
 
+  // Create conversation if item has a non-empty userID
+  useEffect(() => {
+    const createConversationWithUserID = async () => {
+      if (!item?.uploaderId || !currentUser?.id) return;
+      
+      try {
+        console.log('⏳ Creating conversation with userID:', item.uploaderId);
+        const newConversation = await createConversation(item.uploaderId!);
+        console.log('✅ Conversation created:', newConversation);
+        // Update selected user to the new conversation
+        const otherUserId = newConversation.participants.find(id => id !== currentUser.id);
+        setSelectedUserId(otherUserId ?? null);
+      } catch (error) {
+        console.error('❌ Failed to create conversation:', error);
+      }
+    };
+
+    createConversationWithUserID();
+  }, [item?.uploaderId, currentUser?.id, createConversation]);
+
   // Load messages when user is selected
   useEffect(() => {
     const loadMessages = async () => {
@@ -476,7 +501,21 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
     setUserColor(userColors[Math.floor(Math.random() * userColors.length)]);
   }, []);
 
-
+  // Helper function to find real conversation ID from API conversations
+  const findConversationId = (userId: string): string | null => {
+    if (!apiConversations || apiConversations.length === 0) {
+      return null;
+    }
+    
+    // Find conversation where the selected user is a participant
+    const conversation = apiConversations.find(conv => 
+      conv.participants.some((participant: any) => 
+        participant._id === userId || participant.id === userId
+      )
+    );
+    
+    return conversation?._id || null;
+  };
 
   // State for new message input
   const [newMessage, setNewMessage] = useState('');
@@ -565,23 +604,7 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
     setShowUserDropdown(false);
   };
 
-  // Helper function to find real conversation ID from API conversations
-  const findConversationId = (userId: string): string | null => {
-    if (!apiConversations || apiConversations.length === 0) {
-      return null;
-    }
-    
-    // Find conversation where the selected user is a participant
-    const conversation = apiConversations.find(conv => 
-      conv.participants.some((participant: any) => 
-        participant._id === userId || participant.id === userId
-      )
-    );
-    
-    return conversation?._id || null;
-  };
-
-  // Handle sending a new message or image attachment
+  // Handle sending message
   const handleSendMessage = async (content?: string, attachment?: Attachment) => {
     const messageContent = content || newMessage;
     if (!messageContent.trim() && !attachment) {
@@ -605,69 +628,12 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
       return;
     }
 
-    // Create message ID outside try block for error handling
-    const messageId = Date.now().toString();
-    
     try {
-      // Create optimistic message for immediate UI update
-      const optimisticMessage: Message = {
-        id: messageId,
-        sender: currentUser?.firstName || 'You',
-        content: messageContent,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        senderRole: 'admin',
-        conversationId: realConversationId,
-        attachment,
-        status: 'sending' // Show as sending initially
-      };
-      
-      // Update messages for immediate UI feedback
-      setMessages(prev => [...prev, optimisticMessage]);
-      
-      // Send message via API
-      console.log('🚀 Sending message to conversation:', realConversationId);
-      const response = await sendMessage(realConversationId, messageContent, attachment ? 'image' : 'text');
-      
-      // Update message status to sent without duplicating the message
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId 
-          ? { ...msg, status: 'sent' }
-          : msg
-      ));
-      
-      // Update local conversation state
-      if (selectedUserId) {
-        setConversations(prev => prev.map(conv => 
-          conv.userId === selectedUserId 
-            ? {
-                ...conv,
-                messages: [...conv.messages.filter(m => m.id !== messageId), { ...optimisticMessage, status: 'sent' }],
-                lastMessage: messageContent,
-                lastMessageTime: optimisticMessage.timestamp,
-              }
-            : conv
-        ));
-      }
-      
-      console.log('✅ Message sent successfully:', response);
-      
-    } catch (error) {
-      console.error('❌ Failed to send message:', error);
-      
-      // Update message status to failed
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId 
-          ? { ...msg, status: 'failed' }
-          : msg
-      ));
-      
-      // Optionally show error to user
-      alert('Failed to send message. Please try again.');
-    }
-    
-    // Clear input if not a content parameter (user typed message)
-    if (!content) {
+      const message = await sendMessage(realConversationId, messageContent, attachment?.type);
+      setMessages(prev => [...prev, message]);
       setNewMessage('');
+    } catch (error) {
+      console.error('Error sending message:', error);
     }
   };
 
