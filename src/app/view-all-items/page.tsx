@@ -111,7 +111,9 @@ function ItemCard({ item, index, isAdmin }: { item:  Item; index: number; isAdmi
     params.set('floor', String(item.floor || ''));
     params.set('uploader', item.uploaderName || '');
     params.set('image', item.imageUrl || '');
+    params.set('userID' , item.uploaderId || '');
     params.set('action', action);
+
     router.push(`/communicationHub?${params.toString()}`);
 };
   return (

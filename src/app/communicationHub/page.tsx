@@ -61,6 +61,7 @@ export default function CommunicationHubPage() {
     floor: searchParams?.get('floor'),
     uploader: searchParams?.get('uploader'),
     image: searchParams?.get('image'),
+    uploderId: searchParams?.get('userID')
   };
   const { user: currentUser } = useAuth();
   
