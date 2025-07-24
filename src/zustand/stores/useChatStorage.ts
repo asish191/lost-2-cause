@@ -3,6 +3,30 @@ import { devtools, persist, createJSONStorage } from 'zustand/middleware';
 import Cookies from 'js-cookie';
 import { API_BASE_URL } from '@/constants/api';
 
+// Helper function to process image messages and ensure proper attachment
+const processImageMessage = (msg: any) => {
+  if (msg.messageType === 'image') {
+    // Check if it's a Cloudinary URL or base64 data URL
+    const imageUrl = msg.content;
+    const isCloudinaryUrl = typeof imageUrl === 'string' && 
+      (imageUrl.includes('cloudinary.com') || imageUrl.includes('res.cloudinary.com'));
+    const isDataUrl = typeof imageUrl === 'string' && imageUrl.startsWith('data:image/');
+    
+    console.log(' [Debug] URL type check - Cloudinary:', isCloudinaryUrl, '| Data URL:', isDataUrl);
+    console.log(' [Debug] Image URL preview:', imageUrl?.substring(0, 50) + '...');
+    
+    // Create transformed message with proper attachment
+    return {
+      ...msg,
+      attachment: msg.attachment || {
+        type: 'image',
+        url: imageUrl // Use content as URL for image messages
+      }
+    };
+  }
+  return msg;
+};
+
 // Conversation interface based on your API response
 interface Conversation {
   _id: string;
@@ -54,10 +78,16 @@ const useChatStorage = create<ChatState>()(
           set({ isLoading: true, error: null });
           try {
             const token = Cookies.get('auth_token');
+            console.log('🔑 [Debug] Auth token from cookies:', token ? 'Token found' : 'No token found');
+            console.log('🔑 [Debug] Token length:', token?.length || 0);
+            console.log('🔑 [Debug] Token preview:', token ? `${token.substring(0, 20)}...` : 'N/A');
+            
             if (!token) {
+              console.error('❌ [Debug] No authentication token found in cookies');
               throw new Error('No authentication token found');
             }
 
+            console.log('🌐 [Debug] Making request to:', `${API_BASE_URL}/conversations`);
             const response = await fetch(`${API_BASE_URL}/conversations`, {
               method: 'GET',
               headers: {
@@ -65,6 +95,9 @@ const useChatStorage = create<ChatState>()(
                 'Content-Type': 'application/json',
               },
             });
+            
+            console.log('📡 [Debug] Response status:', response.status);
+            console.log('📡 [Debug] Response headers:', Object.fromEntries(response.headers.entries()));
 
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
@@ -198,17 +231,28 @@ const useChatStorage = create<ChatState>()(
           set({ isLoading: true, error: null });
           try {
             const token = Cookies.get('auth_token');
+            console.log('📥 [Debug] getMessages - Token check:', token ? 'Token found' : 'No token');
+            console.log('📥 [Debug] getMessages - Conversation ID:', conversationId);
+            
             if (!token) {
+              console.error('❌ [Debug] getMessages - No authentication token found');
               throw new Error('No authentication token found');
             }
 
-            const response = await fetch(`${API_BASE_URL}/conversations/${conversationId}`, {
+            const requestUrl = `${API_BASE_URL}/conversations/${conversationId}`;
+            console.log('🌐 [Debug] getMessages - Request URL:', requestUrl);
+            
+            const response = await fetch(requestUrl, {
               method: 'GET',
               headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
               },
             });
+            
+            console.log('📡 [Debug] getMessages - Response status:', response.status);
+            console.log('📡 [Debug] getMessages - Response ok:', response.ok);
+            console.log('📡 [Debug] getMessages - Response headers:', Object.fromEntries(response.headers.entries()));
 
             if (!response.ok) {
               throw new Error(`HTTP error! status: ${response.status}`);
@@ -216,10 +260,85 @@ const useChatStorage = create<ChatState>()(
 
             const data = await response.json();
             
+            // Log full response structure to better understand it
+            console.log('📥 [Debug] getMessages - Full response data:', JSON.stringify(data, null, 2));
+            
+            // Handle different response structures
             if (data.statusCode === 200) {
-              // Return the conversation data with messages
-              return data.body;
+              // Extract messages from the response
+              console.log('📥 [Debug] getMessages - Response body:', data.body);
+              
+              // Check if messages are in data.body.messages
+              if (data.body?.messages?.length > 0) {
+                console.log('📥 [Debug] getMessages - Message count:', data.body.messages.length);
+                console.log('📥 [Debug] getMessages - First message structure:', JSON.stringify(data.body.messages[0], null, 2));
+                console.log('📥 [Debug] getMessages - Message fields:', Object.keys(data.body.messages[0]));
+                
+                // Transform messages to ensure image messages are properly handled
+                const transformedMessages = data.body.messages.map((msg: any) => {
+                  // Use the shared helper function to process image messages
+                  if (msg.messageType === 'image') {
+                    console.log('📷 [Debug] Found image message:', msg._id || msg.id);
+                    const processedMsg = processImageMessage(msg);
+                    console.log('✅ [Debug] Transformed image message with attachment:', 
+                      processedMsg.attachment ? 'yes' : 'no');
+                    return processedMsg;
+                  }
+                  return msg;
+                });
+                
+                return {
+                  ...data.body,
+                  messages: transformedMessages
+                };
+              }
+              // Check if messages are in data.body.conversation.messages
+              else if (data.body?.conversation?.messages?.length > 0) {
+                console.log('📥 [Debug] getMessages - Message count (nested):', data.body.conversation.messages.length);
+                console.log('📥 [Debug] getMessages - First message structure (nested):', JSON.stringify(data.body.conversation.messages[0], null, 2));
+                console.log('📥 [Debug] getMessages - Message fields (nested):', Object.keys(data.body.conversation.messages[0]));
+                
+                // Transform messages to ensure image messages are properly handled
+                const transformedMessages = data.body.conversation.messages.map((msg: any) => {
+                  // Use the shared helper function to process image messages
+                  if (msg.messageType === 'image') {
+                    console.log('📷 [Debug] Found image message (nested):', msg._id || msg.id);
+                    const processedMsg = processImageMessage(msg);
+                    console.log('✅ [Debug] Transformed image message with attachment (nested):', 
+                      processedMsg.attachment ? 'yes' : 'no');
+                    return processedMsg;
+                  }
+                  return msg;
+                });
+                
+                // Return with the expected structure and transformed messages
+                return {
+                  ...data.body.conversation,
+                  messages: transformedMessages
+                };
+              }
+              // Check if messages are directly in the conversation
+              else if (data.body?.conversation) {
+                console.log('📥 [Debug] getMessages - Conversation found but no messages array');
+                console.log('📥 [Debug] getMessages - Conversation keys:', Object.keys(data.body.conversation));
+                
+                // If there's a messages property that's not an array
+                if (data.body.conversation.messages && !Array.isArray(data.body.conversation.messages)) {
+                  console.log('📥 [Debug] getMessages - Messages property exists but is not an array');
+                  console.log('📥 [Debug] getMessages - Messages type:', typeof data.body.conversation.messages);
+                }
+                
+                return {
+                  ...data.body.conversation,
+                  messages: []
+                };
+              }
+              else {
+                console.log('📥 [Debug] getMessages - No messages found in response');
+                return { messages: [] };
+              }
             } else {
+              console.error('❌ [Debug] getMessages - API error:', data);
               throw new Error(data.message || 'Failed to get messages');
             }
           } catch (err: any) {

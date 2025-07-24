@@ -628,7 +628,7 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
       console.log('🚀 Sending message to conversation:', realConversationId);
       const response = await sendMessage(realConversationId, messageContent, attachment ? 'image' : 'text');
       
-      // Update message status to sent
+      // Update message status to sent without duplicating the message
       setMessages(prev => prev.map(msg => 
         msg.id === messageId 
           ? { ...msg, status: 'sent' }
@@ -740,7 +740,10 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
 
   // Auto-scroll to the latest message when messages or typing state changes
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Use setTimeout to ensure the scroll happens after the DOM is updated
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
   }, [messages, isAdminTyping]);
 
   // Filter messages based on search query
@@ -918,20 +921,19 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
             </div>
           ) : (
             <>
-              <AnimatePresence>
-                {filteredMessages.map((message) => (
-                  <motion.div
-                    key={message.id}
-                    layout
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                    className={`group flex flex-col ${
-                      message.senderRole === 'user' ? 'items-end' : 
-                      message.senderRole === 'system' ? 'items-center' : 'items-start'
-                    }`}
-                  >
+              {/* Removed AnimatePresence wrapper to prevent continuous re-renders */}
+              {filteredMessages.map((message) => (
+                <motion.div
+                  key={message.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className={`group flex flex-col ${
+                    message.senderRole === 'user' ? 'items-end' : 
+                    message.senderRole === 'system' ? 'items-center' : 'items-start'
+                  }`}
+                >
                     {message.senderRole === 'system' ? (
                       <div className="max-w-lg px-4 py-2 my-2 rounded-full shadow-sm bg-gray-200 text-gray-700 text-xs italic">
                         <p>{message.content}</p>
@@ -945,10 +947,55 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
                               : 'bg-white text-gray-800 border border-gray-200/80 shadow-md'
                           }`}
                         >
+                          {/* Handle image messages either via attachment or messageType */}
                           {message.attachment?.type === 'image' && (
-                            <img src={message.attachment.url} alt="Uploaded content" className="rounded-lg mb-2 max-h-48" />
+                            <div className="image-container">
+                              <img 
+                                src={message.attachment.url} 
+                                alt="Uploaded content" 
+                                className="rounded-lg mb-2 max-h-48 w-auto" 
+                                onLoad={() => console.log('✅ Image loaded successfully:', message.attachment?.url)}
+                                onError={(e) => {
+                                  console.error('❌ Image failed to load from attachment URL:', message.attachment?.url);
+                                  // Try to get element and set fallback
+                                  const imgElement = e.target as HTMLImageElement;
+                                  imgElement.onerror = null; // Prevent infinite error loop
+                                  // Use inline data URL instead of external file to prevent 404 errors
+                                  imgElement.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MEVBMTczNDg3QzA5MTFFNjk3ODM5NjQyRjE2RjA3QTkiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6MEVBMTczNDk3QzA5MTFFNjk3ODM5NjQyRjE2RjA3QTkiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDowRUExNzM0NjdDMDkxMUU2OTc4Mzk2NDJGMTZGMDdBOSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDowRUExNzM0NzdDMDkxMUU2OTc4Mzk2NDJGMTZGMDdBOSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PjjUmssAAAGASURBVHja7NjhaoMwEMDxM8Za2r3/A+4Ntt7QYXe5wjKWgZm2SZgE/f9A0Jh4/FJjmhTZOgdHKzhkgkMmOGSCQyaQ5g/ByQ/zRRHGWiv3HgDOpUAICQ6Z4JAJDpngkAkOmeCQCQ6Z4JAJDpngkAkOmeCQCQ6Z4JAJDpngkAkOmeCQCQ6Z4JAJDpnYOoSxdgkOIRMcMsEhExwywSETHDLBIRMcMsEhExwywSETW4RwNw+HTHDIBIdMcMgEh0xwyASHTHDIBIdMcMgEh0xwyASHTHDIBIdMcMjE1iEsJHbIBIdMcMgEh0xwyASHTHDIBIdMcMgEh0xwyMQWIdzNwyETHDLBIRMcMsEhExwywSETHDLBIRMcMsEhExwywSETHDLBIRNbh7CQ2CETHDLBIRMcMsEhExwywSETHDLBIRMcMsEhE1uEcDcPh0xwyASHTHDIBIdMcMgEh0xwyASHTHDIBIdMcMgEh0xwyASHTGwdwkJih0xwyASHTHDIBIdMcMgEh0xwyASHTHDIBIdM8OwrwABF5m9OwhXPkQAAAABJRU5ErkJggg=='
+                                }}
+                              />
+                              <div className="text-xs text-gray-500 mt-1">Image from attachment</div>
+                            </div>
                           )}
-                          {message.content && <p className="text-sm">{message.content}</p>}
+                          {message.messageType === 'image' && !message.attachment?.type && (
+                            <div className="image-container">
+                              <img 
+                                src={message.content} 
+                                alt="Image message" 
+                                className="rounded-lg mb-2 max-h-48 w-auto" 
+                                onLoad={() => console.log('✅ Image loaded successfully from content URL:', message.content?.substring(0, 30) + '...')}
+                                onError={(e) => {
+                                  console.error('❌ Image failed to load from content URL:', message.content?.substring(0, 30) + '...');
+                                  // Try to get element and set fallback
+                                  const imgElement = e.target as HTMLImageElement;
+                                  imgElement.onerror = null; // Prevent infinite error loop
+                                  // Use inline data URL instead of external file to prevent 404 errors
+                                  imgElement.src = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMy1jMDExIDY2LjE0NTY2MSwgMjAxMi8wMi8wNi0xNDo1NjoyNyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNiAoV2luZG93cykiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6MEVBMTczNDg3QzA5MTFFNjk3ODM5NjQyRjE2RjA3QTkiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6MEVBMTczNDk3QzA5MTFFNjk3ODM5NjQyRjE2RjA3QTkiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDowRUExNzM0NjdDMDkxMUU2OTc4Mzk2NDJGMTZGMDdBOSIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDowRUExNzM0NzdDMDkxMUU2OTc4Mzk2NDJGMTZGMDdBOSIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PjjUmssAAAGASURBVHja7NjhaoMwEMDxM8Za2r3/A+4Ntt7QYXe5wjKWgZm2SZgE/f9A0Jh4/FJjmhTZOgdHKzhkgkMmOGSCQyaQ5g/ByQ/zRRHGWiv3HgDOpUAICQ6Z4JAJDpngkAkOmeCQCQ6Z4JAJDpngkAkOmeCQCQ6Z4JAJDpngkAkOmeCQCQ6Z4JAJDpnYOoSxdgkOIRMcMsEhExwywSETHDLBIRMcMsEhExwywSETW4RwNw+HTHDIBIdMcMgEh0xwyASHTHDIBIdMcMgEh0xwyASHTHDIBIdMcMjE1iEsJHbIBIdMcMgEh0xwyASHTHDIBIdMcMgEh0xwyMQWIdzNwyETHDLBIRMcMsEhExwywSETHDLBIRMcMsEhExwywSETHDLBIRNbh7CQ2CETHDLBIRMcMsEhExwywSETHDLBIRMcMsEhE1uEcDcPh0xwyASHTHDIBIdMcMgEh0xwyASHTHDIBIdMcMgEh0xwyASHTGwdwkJih0xwyASHTHDIBIdMcMgEh0xwyASHTHDIBIdM8OwrwABF5m9OwhXPkQAAAABJRU5ErkJggg=='
+                                }}
+                              />
+                              <div className="text-xs text-gray-500 mt-1">Image from Cloudinary</div>
+                            </div>
+                          )}
+                          {message.content && message.messageType !== 'image' && <p className="text-sm">{message.content}</p>}
+                          
+                          {/* Debug info in development */}
+                          {process.env.NODE_ENV === 'development' && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              Type: {message.messageType || 'text'} | 
+                              Has attachment: {message.attachment ? 'yes' : 'no'} |
+                              Content: {message.content ? (message.content.length > 30 ? message.content.substring(0, 30) + '...' : message.content) : 'none'}
+                            </div>
+                          )}
                         </div>
                         <AnimatePresence>
                           {activePicker === message.id && (
@@ -999,9 +1046,8 @@ export default function CommunicationHubForm({ item, users }: CommunicationHubPr
                         {message.timestamp}
                       </span>
                     </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                </motion.div>
+              ))}
 
               {isAdminTyping && (
                 <motion.div

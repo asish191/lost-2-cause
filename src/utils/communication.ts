@@ -17,6 +17,7 @@ export interface Message {
   attachment?: { type: 'image'; url: string };
   status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
   reactions?: Reaction[];
+  messageType?: 'text' | 'image' | 'file';
 }
 
 /**
