@@ -1,0 +1,116 @@
+stages:
+  - lint
+  - test
+  - build
+  - security
+  - deploy-staging
+  - deploy-production
+
+variables:
+  NODE_VERSION: "20"
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+
+cache:
+  paths:
+    - node_modules/
+    - .npm/
+
+# Lint and Type Check
+lint-and-type-check:
+  stage: lint
+  image: node:${NODE_VERSION}-alpine
+  before_script:
+    - npm ci
+  script:
+    - npm run lint
+    - npx tsc --noEmit
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# Build Application
+build:
+  stage: build
+  image: node:${NODE_VERSION}-alpine
+  before_script:
+    - npm ci
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - .next/
+    expire_in: 1 week
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# Security Scan
+security-scan:
+  stage: security
+  image: aquasec/trivy:latest
+  script:
+    - trivy fs --format sarif --output trivy-results.sarif .
+  artifacts:
+    reports:
+      sast: trivy-results.sarif
+    paths:
+      - trivy-results.sarif
+    expire_in: 1 week
+  only:
+    - merge_requests
+    - main
+    - develop
+
+# Deploy to Staging
+deploy-staging:
+  stage: deploy-staging
+  image: node:${NODE_VERSION}-alpine
+  before_script:
+    - npm ci
+  script:
+    - npm run build
+    - echo "Deploying to staging environment..."
+    # Add your staging deployment commands here
+    # Example: npm run deploy:staging
+  environment:
+    name: staging
+    url: https://staging.lost2cause.com
+  only:
+    - develop
+  when: manual
+
+# Deploy to Production
+deploy-production:
+  stage: deploy-production
+  image: node:${NODE_VERSION}-alpine
+  before_script:
+    - npm ci
+  script:
+    - npm run build
+    - echo "Deploying to production environment..."
+    # Add your production deployment commands here
+    # Example: npm run deploy:production
+  environment:
+    name: production
+    url: https://lost2cause.com
+  only:
+    - main
+  when: manual
+
+# Docker Build
+docker-build:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+  script:
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+    - docker build -t $CI_REGISTRY_IMAGE:latest .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest
+  only:
+    - main
